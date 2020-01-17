@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/d/GitHub/Quartz/src/math/polynomial.cpp
+polynomial.h
+/mnt/d/GitHub/Quartz/src/math/polynomial.h
+armadillo
+-
+
+/mnt/d/GitHub/Quartz/src/math/polynomial.h
+armadillo
+-
+cassert
+-
+

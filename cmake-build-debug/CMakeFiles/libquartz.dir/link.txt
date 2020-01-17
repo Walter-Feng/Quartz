@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,liblibquartz.so -o liblibquartz.so CMakeFiles/libquartz.dir/src/math/polynomial.cpp.o /usr/lib/x86_64-linux-gnu/libarmadillo.so 

@@ -1,0 +1,8 @@
+/usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /mnt/d/GitHub/Quartz
+Found Armadillo Library,
+     ARMADILLO_VERSION: 9.800.3
+     ARMADILLO_LIBRARIES   : /usr/lib/x86_64-linux-gnu/libarmadillo.so
+     ARMADILLO_INCLUDE_DIRS: /usr/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /mnt/d/GitHub/Quartz/cmake-build-debug
