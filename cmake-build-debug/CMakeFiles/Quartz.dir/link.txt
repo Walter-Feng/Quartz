@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libQuartz.so -o libQuartz.so CMakeFiles/Quartz.dir/library.cpp.o 
