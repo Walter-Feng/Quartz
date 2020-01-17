@@ -1,0 +1,15 @@
+#ifndef QUARTZ
+#define QUARTZ
+
+#include "error.h"
+
+
+// Details
+
+// Math
+#include "details/math/polynomial.h"
+
+//utils
+#include "details/util/type_converter.h"
+
+#endif
