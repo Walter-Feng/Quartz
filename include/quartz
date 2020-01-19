@@ -3,6 +3,7 @@
 
 #include "error.h"
 
+#include "alias.h"
 
 // Details
 
@@ -10,6 +11,6 @@
 #include "details/math/polynomial.h"
 
 //utils
-#include "details/util/type_converter.h"
+#include "util/type_converter.h"
 
 #endif
