@@ -1,14 +1,19 @@
 #ifndef QUARTZ
 #define QUARTZ
 
-#include "error.h"
-
 #include "alias.h"
+#include "error.h"
+#include "propagate.h"
+
 
 // Details
 
 // Math
 #include "details/math/polynomial.h"
+
+// Methods
+#include "details/methods/dvr.h"
+// #include "details/methods/method_template.h"
 
 //utils
 #include "util/type_converter.h"
