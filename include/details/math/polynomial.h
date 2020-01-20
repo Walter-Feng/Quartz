@@ -35,6 +35,12 @@ struct Term {
     return this->coef * result;
   }
 
+  explicit
+  inline
+  Term(const arma::uword dim, const T coef = T(0.0)) :
+      coef(coef),
+      indices(arma::zeros<lvec>(dim)) {}
+
   arma::uword dim() const {
     return this->indices.n_elem;
   }
@@ -105,9 +111,20 @@ public:
   arma::Col<T> coefs;
   lmat indices;
 
+  explicit
+  inline
+  Polynomial(const arma::uword dim, const T coef = 0.0) :
+      coefs(arma::Col<T>{coef}),
+      indices(arma::zeros<lmat>(dim, 1)) {}
+
   inline
   polynomial::Term<T> term(arma::uword index) const {
     return polynomial::Term<T>{this->coefs(index), this->indices.col(index)};
+  }
+
+  inline
+  arma::uword dim() const {
+    return this->indices.n_rows;
   }
 
   template<typename U>
@@ -165,7 +182,7 @@ public:
         arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(B.coefs);
     const arma::Col<std::common_type_t<T, U>>
         new_coefs =
-            arma::join_cols(converted_this_coefs,converted_B_coefs);
+        arma::join_cols(converted_this_coefs, converted_B_coefs);
 
     return {new_coefs, new_indices};
   }
@@ -189,7 +206,7 @@ public:
     const lmat new_indices = arma::join_rows(this->indices, B.indices);
     const auto converted_this_coefs =
         arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
-    const auto converted_B_coef = arma::Col<std::common_type_t<T,U>>{B.coef};
+    const auto converted_B_coef = arma::Col<std::common_type_t<T, U>>{B.coef};
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = arma::join_cols(converted_this_coefs, converted_B_coef);
 
@@ -208,8 +225,9 @@ public:
   }
 
   template<typename U>
-  Polynomial<std::common_type_t<T,U>> operator*(const Polynomial<U> & B) const {
-    Polynomial<std::common_type_t<T,U>> result_0 = (*this) * B.term(0);
+  Polynomial<std::common_type_t<T, U>>
+  operator*(const Polynomial<U> & B) const {
+    Polynomial<std::common_type_t<T, U>> result_0 = (*this) * B.term(0);
 
     for (arma::uword i = 1; i < B.coefs.n_elem; i++) {
       result_0 = result_0 + (*this) * B.term(i);
@@ -248,14 +266,66 @@ public:
   }
 
   template<typename U>
-  Polynomial<T> operator/(const polynomial::Term<T> & B) const {
+  Polynomial<std::common_type_t<T, U>>
+  operator/(const polynomial::Term<T> & B) const {
     lmat new_indices = this->indices;
     new_indices.each_col() -= B.indices;
-    const arma::Col<std::common_type_t<T,U>> new_coefs = this->coefs / B.coef;
+    const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
     return {new_coefs, new_indices};
   }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
+  displace(const arma::Col<U> & displacement) const {
+    if (this->dim() != displacement.n_elem) {
+      throw Error(
+          "Different dimension between the displacement and polynomial term");
+    }
+
+    const auto dim = this->dim();
+
+    auto result =
+        Polynomial<std::common_type_t<T, U>>(dim);
+
+    const std::function<arma::uword(arma::uword)>
+        factorial = [&factorial](const arma::uword n) -> arma::uword {
+      if (n == 0) return 1;
+      else if (n == 1) return n;
+      else return factorial(n - 1);
+    };
+
+    const auto binomial =
+        [&factorial](const arma::uword n, const arma::uword i) -> arma::uword {
+          return factorial(n) / factorial(i) / factorial(n - i);
+        };
+
+    const auto term_displace =
+        [&binomial](const polynomial::Term<T> term,
+                    const arma::Col<U> & displacement)
+            -> Polynomial<std::common_type_t<T, U>> {
+
+          const arma::uword dim = term.dim();
+          const auto & indices = term.indices;
+
+          auto result = Polynomial<std::common_type_t<T, U>>(dim);
+
+          for (arma::uword i = 0; i < dim; i++) {
+            auto term = Polynomial<std::common_type_t<T, U>>(dim);
+            for (arma::uword j = 0; j <= indices(i); j++) {
+              lvec variable = arma::zeros<lvec>(dim);
+              variable(i) = j;
+              term +=
+                  polynomial::Term < double > {binomial(indices(i), j) *
+                                               pow(displacement(i),
+                                                   indices(i) - j), variable};
+            }
+            result *= term;
+          }
+        };
+  }
 };
+
 
 }
 }
