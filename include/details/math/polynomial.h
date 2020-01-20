@@ -18,32 +18,15 @@ struct Term {
   T coef;
   lvec indices;
 
-  inline
-  T at(const arma::vec & position) const {
+  template<typename U>
+  std::common_type_t<T, U> at(const arma::Col<U> & position) const {
 
-    if (position.n_elem == this->indices.n_elem) {
+    if (position.n_elem != this->indices.n_elem) {
       throw Error(
           "Different dimension between the position and polynomial term");
     }
 
-    T result = utils::convert<T>(1.0);
-
-    for (arma::uword i = 0; i < position.n_elem; i++) {
-      result *= std::pow(position(i), this->indices(i));
-    }
-
-    return this->coef * result;
-  }
-
-  inline
-  cx_double at(const arma::cx_vec & position) const {
-
-    if (position.n_elem == this->indices.n_elem) {
-      throw Error(
-          "Different dimension between the position and polynomial term");
-    }
-
-    cx_double result = cx_double{1.0, 0.0};
+    auto result = std::common_type_t<T, U>(1.0);
 
     for (arma::uword i = 0; i < position.n_elem; i++) {
       result *= std::pow(position(i), this->indices(i));
@@ -61,16 +44,6 @@ struct Term {
     if (this->indices == term.indices) return true;
 
     return false;
-  }
-
-  inline
-  bool is_same_term(const Term<double> & term) const {
-    return is_same_term<double>(term);
-  }
-
-  inline
-  bool is_same_term(const Term<cx_double> & term) const {
-    return is_same_term<cx_double>(term);
   }
 
   inline
@@ -137,31 +110,15 @@ public:
     return polynomial::Term<T>{this->coefs(index), this->indices.col(index)};
   }
 
-  inline
-  T at(const arma::vec & position) const {
-    if (position.n_elem == this->indices.n_rows) {
+  template<typename U>
+  std::common_type_t<T, U> at(const arma::Col<U> & position) const {
+
+    if (position.n_elem != this->indices.n_rows) {
       throw Error(
           "Different dimension between the position and polynomial term");
     };
 
-    T result = utils::convert<T>(0.0);
-
-    for (arma::uword i = 0; i < this->indices.n_cols; i++) {
-      const polynomial::Term<T> term = this->term(i);
-      result += term.at(position);
-    }
-
-    return result;
-  }
-
-  inline
-  cx_double at(const arma::cx_vec & position) const {
-    if (position.n_elem == this->indices.n_rows) {
-      throw Error(
-          "Different dimension between the position and the polynomial");
-    }
-
-    cx_double result = cx_double{0.0, 0.0};
+    auto result = std::common_type_t<T, U>(0.0);
 
     for (arma::uword i = 0; i < this->indices.n_cols; i++) {
       const polynomial::Term<T> term = this->term(i);
@@ -198,87 +155,103 @@ public:
     return result;
   }
 
-  Polynomial<T> operator+(const Polynomial<T> & B) const {
-    const lmat new_indices = arma::join_rows(this->indices, B->indices);
-    const arma::Col<T> new_coefs = arma::join_cols(this->coefs, B->coefs);
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
+  operator+(const Polynomial<U> & B) const {
+    const lmat new_indices = arma::join_rows(this->indices, B.indices);
+    const auto converted_this_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
+    const auto converted_B_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(B.coefs);
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs =
+            arma::join_cols(converted_this_coefs,converted_B_coefs);
 
     return {new_coefs, new_indices};
   }
 
-  Polynomial<T> operator+(const double B) const {
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>> operator+(const U B) const {
 
     const lvec dummy_indices = arma::zeros<lvec>(
         this->indices.n_rows);
     const lmat new_indices = arma::join_rows(this->indices,
                                              dummy_indices);
-    const arma::Col<T> new_coefs = arma::join_cols(this->coefs, B);
+    const arma::Col<std::common_type_t<T, U>> new_coefs = arma::join_cols(
+        this->coefs, B);
 
     return {new_coefs, new_indices};
   }
 
-  Polynomial<cx_double> operator+(const cx_double B) const {
-    const lvec dummy_indices = arma::zeros<lvec>(
-        this->indices.n_rows);
-    const lmat new_indices = arma::join_rows(this->indices,
-                                             dummy_indices);
-
-    const arma::Col<cx_double> new_coefs = arma::join_cols(this->coefs, B);
-
-    return {new_coefs, new_indices};
-  }
-
-  Polynomial<T> operator+(const polynomial::Term<T> & B) const {
-    const lmat new_indices = arma::join_rows(this->indices, B->indices);
-    const arma::Col<T> new_coefs = arma::join_cols(this->coefs, B.coef);
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
+  operator+(const polynomial::Term<U> & B) const {
+    const lmat new_indices = arma::join_rows(this->indices, B.indices);
+    const auto converted_this_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
+    const auto converted_B_coef = arma::Col<std::common_type_t<T,U>>{B.coef};
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs = arma::join_cols(converted_this_coefs, converted_B_coef);
 
     return {new_coefs, new_indices};
   }
 
-  Polynomial<T> operator*(const polynomial::Term<T> & B) const {
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
+  operator*(const polynomial::Term<U> & B) const {
     lmat new_indices = this->indices;
     new_indices.each_col() += B.indices;
-    const arma::Col<T> new_coefs = this->coefs * B.coef;
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs = this->coefs * B.coef;
 
     return {new_coefs, new_indices};
   }
 
-  Polynomial<T> operator*(const Polynomial<T> & B) const {
-    Polynomial<T> result_0 = (*this) * B.term(0);
+  template<typename U>
+  Polynomial<std::common_type_t<T,U>> operator*(const Polynomial<U> & B) const {
+    Polynomial<std::common_type_t<T,U>> result_0 = (*this) * B.term(0);
 
     for (arma::uword i = 1; i < B.coefs.n_elem; i++) {
-      result_0 = result_0 + B.term(i);
+      result_0 = result_0 + (*this) * B.term(i);
     }
 
     return result_0;
   }
 
-  Polynomial<T> operator-(const Polynomial<T> & B) const {
-    return *this + (-1.0) * B;
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>> operator*(const U B) const {
+    return {this->coefs * B, this->indices};
   }
 
-  Polynomial<T> operator-(const double B) const {
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
+  operator-(const Polynomial<U> & B) const {
+    return *this + B * (-1.0);
+  }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>> operator-(const U B) const {
 
     const lvec dummy_indices = arma::zeros<lvec>(
         this->indices.n_rows);
     const lmat new_indices = arma::join_rows(this->indices,
                                              dummy_indices);
-    const arma::Col<T> new_coefs = arma::join_cols(this->coefs, -B);
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs = arma::join_cols(this->coefs, -B);
 
     return {new_coefs, new_indices};
   }
 
-  Polynomial<T> operator/(const double B) const {
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>> operator/(const U B) const {
     return *(this) * (1.0 / B);
   }
 
-  Polynomial<cx_double> operator/(const cx_double B) const {
-    return *(this) * (1.0 / B);
-  }
-
+  template<typename U>
   Polynomial<T> operator/(const polynomial::Term<T> & B) const {
     lmat new_indices = this->indices;
     new_indices.each_col() -= B.indices;
-    const arma::Col<T> new_coefs = this->coefs / B.coef;
+    const arma::Col<std::common_type_t<T,U>> new_coefs = this->coefs / B.coef;
 
     return {new_coefs, new_indices};
   }
