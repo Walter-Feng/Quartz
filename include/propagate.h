@@ -3,13 +3,10 @@
 
 namespace quartz {
 
-template<typename T>
-using Potential = std::function<double(const arma::Col<T> &)>;
-
-template<typename State, typename T>
+template<typename State, typename Potential, typename T>
 using Propagator = std::function<
     State(const State &,
-          const Potential<T> &,
+          const Potential &,
           const double)>;
 
 template<typename Output, typename State>
@@ -22,11 +19,14 @@ using Printer = std::function<Output(const State &, int)>;
 
 //TODO(Rui): Check if the propagation method such as
 // Runge-kutta method can be integrated in a neat way
-template<typename State, typename Output, typename T>
+template<typename State,
+         typename Potential,
+         typename Output,
+         typename T>
 State
 propagate(const State & state,
-          const Propagator<State, T> & propagator,
-          const Potential<T> & potential,
+          const Propagator<State, Potential, T> & propagator,
+          const Potential & potential,
           const Printer<Output, State> & printer,
           const double dt) {
   //TODO(Rui): Stuff this function
