@@ -186,6 +186,12 @@ TEST_CASE("Operators") {
             result.at(arma::cx_vec{cx_grid(i)})) < 1e-14);
     }
   }
+
+  const arma::mat test1 = arma::randu(10,10);
+
+  std::cout.precision(10);
+  std::cout.width(18);
+  test1.raw_print("test");
 }
 
 }

@@ -10,6 +10,7 @@
 
 // Math
 #include "details/math/polynomial.h"
+#include "details/math/space.h"
 
 // Methods
 #include "details/methods/dvr.h"
@@ -17,5 +18,6 @@
 
 //utils
 #include "util/type_converter.h"
+#include "util/member_function_wrapper.h"
 
 #endif

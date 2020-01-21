@@ -1,6 +1,8 @@
 #ifndef QUARTZ_PROPAGATE_H
 #define QUARTZ_PROPAGATE_H
 
+#include "printer.h"
+
 namespace quartz {
 
 template<typename State, typename Potential, typename T>
@@ -8,9 +10,6 @@ using Propagator = std::function<
     State(const State &,
           const Potential &,
           const double)>;
-
-template<typename Output, typename State>
-using Printer = std::function<Output(const State &, int)>;
 
 
 //TODO(Rui): Check if printer can be constant
@@ -27,8 +26,9 @@ State
 propagate(const State & state,
           const Propagator<State, Potential, T> & propagator,
           const Potential & potential,
-          const Printer<Output, State> & printer,
-          const double dt) {
+          const printer::Printer<Output, State> & printer,
+          const double dt,
+          const int print_level=1) {
   //TODO(Rui): Stuff this function
 }
 

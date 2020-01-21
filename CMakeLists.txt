@@ -16,7 +16,7 @@ add_library(quartz SHARED
         )
 
 ####################
-#  find armadillo  #
+#  find Libraries  #
 ####################
 find_package(
         Armadillo

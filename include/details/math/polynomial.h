@@ -41,6 +41,11 @@ struct Term {
       coef(coef),
       indices(arma::zeros<lvec>(dim)) {}
 
+  inline
+  Term(const T coef, const lvec & indices) :
+    coef(coef),
+    indices(indices) {}
+
   arma::uword dim() const {
     return this->indices.n_elem;
   }

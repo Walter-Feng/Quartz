@@ -33,7 +33,7 @@ math::Polynomial<T> detail_B(const arma::Col<T> & a_vector,
 } // namespace details
 
 template<typename T>
-Propagator<ExampleState<T>, Polynomial<T>, T>
+Propagator<ExampleState<T>, math::Polynomial<T>, T>
     propagator(const State & state,
                const Polynomial<T> & potential,
                const double dt) {
