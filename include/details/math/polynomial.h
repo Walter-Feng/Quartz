@@ -84,6 +84,12 @@ struct Term {
     return result;
   }
 
+  template<typename U>
+  U differentiate(const U & function) const {
+    return this->coef * function.derivative(this->indices);
+  }
+
+
   bool operator==(const Term<T> & term) const {
     return this->coef == term.coef && this->is_same_term(term);
   }
@@ -101,16 +107,16 @@ public:
   Polynomial(const arma::Col<T> & coefs, const lmat & indices) :
       coefs(coefs),
       indices(indices) {
-    if (coefs.n_elem != indices.n_cols) {
+    if (coefs.n_elem != indices.n_rows) {
       throw Error(
-          "the number of coefficients and the indices are not consistent");
+          "the number between coefficients and the indices is not consistent");
     }
   }
 
   explicit
   inline
   Polynomial(const polynomial::Term<T> term) :
-      coefs(arma::Col<T>(term.coef)),
+      coefs(arma::Col<T>{term.coef}),
       indices(lmat(term.indices)) {}
 
   arma::Col<T> coefs;
@@ -152,8 +158,12 @@ public:
 
   inline
   Polynomial<T> derivative(const arma::uword index) const {
+    if (index >= this->dim()) {
+      throw Error("Derivative operator out of bound");
+    }
     Polynomial<T> result = Polynomial<T>(this->term(0).derivative(index));
 
+    #pragma omp parallel for
     for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).derivative(index);
     }
@@ -163,15 +173,28 @@ public:
 
   inline
   Polynomial<T> derivative(const arma::uvec & index) const {
-    if (index >= this->dim()) {
+    if(index.n_elem != this->dim()) {
       throw Error("Derivative operator out of bound");
     }
-
     Polynomial<T> result = *this;
+
+    #pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
         result = result.derivative(j);
       }
+    }
+
+    return result;
+  }
+
+  template<typename U>
+  U differentiate(const U & function) const {
+    U result = U(function.dim());
+    #pragma omp parallel for
+    for(arma::uword i=0; i<this->coefs.n_elem; i++) {
+      const polynomial::Term<T> term = this->term(i);
+      result = result + term.differentiate(function);
     }
 
     return result;
@@ -334,5 +357,13 @@ public:
 
 }
 }
+
+
+
+
+
+
+
+
 
 #endif //MATH_POLYNOMIAL_H
