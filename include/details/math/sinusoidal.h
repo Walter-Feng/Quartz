@@ -115,14 +115,61 @@ struct Sinusoidal {
 
     arma::mat freq_change = this->freqs;
     freq_change.each_col() %= arma::conv_to<arma::vec>::from(index);
-    arma::Col<T> new_coefs = this->coefs % arma::prod(freq_change).t();
-    arma::mat new_is_sin = this->coefs;
-    new_is_sin.each_col() %= - 0.5 * pi * arma::conv_to<arma::vec>::from(index);
+    const arma::Col<T> new_coefs = this->coefs % arma::prod(freq_change).t();
+    arma::mat new_is_sin = this->is_sin;
+    new_is_sin.each_col() += - 0.5 * pi * arma::conv_to<arma::vec>::from(index);
 
     return{new_coefs, this->freqs, new_is_sin, this->translation};
   }
 
+  inline
+  Sinusoidal<T> derivative(const arma::uword & index) const {
+    if(index >= this->dim()) {
+      throw Error("Derivative operator out of bound");
+    }
 
+    const arma::Col<T> new_coefs = this->coefs % this->freqs.col(index);
+    arma::mat new_is_sin = this->is_sin;
+    new_is_sin.col(index) += - 0.5 * pi;
+
+    return{new_coefs, this->freqs, new_is_sin, this->translation};
+  }
+
+  template<typename U>
+  Sinusoidal<std::common_type_t<T, U>>
+  operator+(const Sinusoidal<U> & B) const {
+    const lmat new_freqs = arma::join_rows(this->freqs, B.freqs);
+    const auto converted_this_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
+    const auto converted_B_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(B.coefs);
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs =
+        arma::join_cols(converted_this_coefs, converted_B_coefs);
+    const auto new_translation = arma::join_rows(this->translation, B.translation);
+    const auto new_is_sin = arma::join_rows(this->is_sin, B.is_sin);
+
+
+    return {new_coefs, new_freqs, new_is_sin, new_translation};
+  }
+
+  template<typename U>
+  Sinusoidal<std::common_type_t<T, U>>
+  operator+(const sinusoidal::Term<T> & B) const {
+    const lmat new_freqs = arma::join_rows(this->freqs, B.freqs);
+    const auto converted_this_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
+    const auto converted_B_coefs =
+        arma::Col<std::common_type_t<T, U>>(B.coef);
+    const arma::Col<std::common_type_t<T, U>>
+        new_coefs =
+        arma::join_cols(converted_this_coefs, converted_B_coefs);
+    const auto new_translation = arma::join_rows(this->translation, B.translation);
+    const auto new_is_sin = arma::join_rows(this->is_sin, B.is_sin);
+
+
+    return {new_coefs, new_freqs, new_is_sin, new_translation};
+  }
 };
 }
 }
