@@ -225,7 +225,7 @@ public:
   }
 };
 
-template<typename Potential, typename T>
+template<typename Potential>
 State propagator(State state,
                  const Potential & potential,
                  const double dt) {

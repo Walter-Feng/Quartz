@@ -75,6 +75,7 @@ struct Term {
     }
 
     Term<T> result = *this;
+#pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
         result = result.derivative(j);
@@ -107,7 +108,7 @@ public:
   Polynomial(const arma::Col<T> & coefs, const lmat & indices) :
       coefs(coefs),
       indices(indices) {
-    if (coefs.n_elem != indices.n_rows) {
+    if (coefs.n_elem != indices.n_cols) {
       throw Error(
           "the number between coefficients and the indices is not consistent");
     }
@@ -130,6 +131,9 @@ public:
 
   inline
   polynomial::Term<T> term(arma::uword index) const {
+    if(index >= this->coefs.n_elem) {
+      throw Error("The specified polynomial term does not exist");
+    }
     return polynomial::Term<T>{this->coefs(index), this->indices.col(index)};
   }
 

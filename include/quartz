@@ -11,7 +11,9 @@
 // Math
 #include "details/math/polynomial.h"
 #include "details/math/sinusoidal.h"
+#include "details/math/gaussian.h"
 #include "details/math/space.h"
+#include "details/math/exponential.h"
 
 // Methods
 #include "details/methods/dvr.h"

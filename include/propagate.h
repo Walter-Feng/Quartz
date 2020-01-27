@@ -5,7 +5,7 @@
 
 namespace quartz {
 
-template<typename State, typename Potential, typename T>
+template<typename State, typename Potential>
 using Propagator = std::function<
     State(const State &,
           const Potential &,
@@ -20,11 +20,10 @@ using Propagator = std::function<
 // Runge-kutta method can be integrated in a neat way
 template<typename State,
          typename Potential,
-         typename Output,
-         typename T>
+         typename Output>
 State
 propagate(const State & state,
-          const Propagator<State, Potential, T> & propagator,
+          const Propagator<State, Potential> & propagator,
           const Potential & potential,
           const printer::Printer<Output, State> & printer,
           const double dt,
