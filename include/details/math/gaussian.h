@@ -129,12 +129,26 @@ struct Term {
     return Term<T>(this->polynomial * B, this->binomial + B.binomial,
                    this->monomial + B.monomial);
   }
+
   template<typename U>
   Term<std::common_type_t<T, U>>
   operator*(const U B) const {
     return Term<T>(this->polynomial * polynomial::Term<T>(this->dim(), B),
                    this->binomial + B.binomial,
                    this->monomial + B.monomial);
+  }
+
+  Term<T> wigner_transform() const {
+    arma::vec eigval;
+    arma::mat eigvec;
+    arma::eig_sym(eigval, eigvec, this->binomial);
+
+    const arma::mat real_space_binomial = 2 * this->binomial;
+    const arma::vec real_space_monomial = 2 * this->monomial;
+
+    const double constant_part = 1.0 /  pow(pi, this->dim()) * arma::det(eigvec);
+
+
   }
 };
 
