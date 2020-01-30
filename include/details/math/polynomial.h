@@ -96,6 +96,11 @@ struct Term {
     return this->coef * function.derivative(this->indices);
   }
 
+  inline
+  Term<T> pow(const arma::uword power) const {
+    return {std::pow(this->coef, power), this->indices * power};
+  }
+
 
   bool operator==(const Term<T> & term) const {
     return this->coef == term.coef && this->is_same_term(term);
@@ -212,6 +217,119 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
+  displace(const arma::Col<U> & displacement) const {
+    if (this->dim() != displacement.n_elem) {
+      throw Error(
+          "Different dimension between the displacement and polynomial term");
+    }
+
+    const auto dim = this->dim();
+
+    auto result =
+        Polynomial<std::common_type_t<T, U>>(dim);
+
+    const std::function<arma::uword(arma::uword)>
+        factorial = [&factorial](const arma::uword n) -> arma::uword {
+      if (n == 0) return 1;
+      else if (n == 1) return n;
+      else return factorial(n - 1);
+    };
+
+    const auto binomial =
+        [&factorial](const arma::uword n, const arma::uword i) -> arma::uword {
+          return factorial(n) / factorial(i) / factorial(n - i);
+        };
+
+    const auto term_displace =
+        [&binomial](const polynomial::Term<T> & term,
+                    const arma::Col<U> & displacement)
+            -> Polynomial<std::common_type_t<T, U>> {
+
+          const arma::uword dim = term.dim();
+          const auto & indices = term.indices;
+
+          auto result = Polynomial<std::common_type_t<T, U>>(dim);
+
+        #pragma omp parallel for
+          for (arma::uword i = 0; i < dim; i++) {
+            auto term = Polynomial<std::common_type_t<T, U>>(dim);
+            for (arma::uword j = 0; j <= indices(i); j++) {
+              lvec variable = arma::zeros<lvec>(dim);
+              variable(i) = j;
+              term +=
+                  polynomial::Term < double > {binomial(indices(i), j) *
+                                               pow(displacement(i),
+                                                   indices(i) - j), variable};
+            }
+            result *= term;
+          }
+
+          return result;
+        };
+
+#pragma omp parallel for
+    for(arma::uword i=0; i<this->coefs; i++) {
+      result += term_displace(this->term(i), displacement);
+    }
+
+    return result;
+  }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T,U>>
+  scale(const arma::vec & scaling) const {
+      auto result = Polynomial<std::common_type_t<T,U>>(this->term(0).scale(scaling));
+
+        #pragma omp parallel for
+      for(arma::uword i=1; i<this->coefs.n_elem; i++) {
+        result = result + this->term(i).scale(scaling);
+      }
+
+      return result;
+  }
+
+  Polynomial<T> pow(const arma::uword power) const {
+    if(power == 0) {
+      return Polynomial<T>(this->dim(), 1.0);
+    }
+    Polynomial<T> result = *this;
+    for(arma::uword i=0; i<power; i++) {
+      result *= *this;
+    }
+
+    return result;
+  }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T,U>>
+  operate(const std::vector<Polynomial<U>> & polynomial_list) {
+    if(this->dim() != polynomial_list.size()) {
+      throw Error("Mismatched number between the operator and term");
+    }
+
+    const auto term_operate = [](const polynomial::Term<T> & term,
+                                 const std::vector<Polynomial<U>> & polynomial_list)
+                                     -> Polynomial<std::common_type_t<T,U>> {
+
+      auto result = Polynomial<std::common_type_t<T,U>>(polynomial_list[0].dim(), 1.0);
+#pragma omp parallel for
+      for(arma::uword i=0; i<this->dim(); i++) {
+        result *= polynomial_list[i].pow(term.indices(i));
+      }
+
+      return term->coef * result;
+    };
+
+    auto result = Polynomial<std::common_type_t<T,U>>(polynomial_list[0].dim(),0.0);
+    for(arma::uword i=0; i<this->coefs.n_elem; i++) {
+      result += term_operate(this->term(i), polynomial_list);
+    }
+
+    return result;
+  }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T, U>>
   operator+(const Polynomial<U> & B) const {
     const lmat new_indices = arma::join_rows(this->indices, B.indices);
     const auto converted_this_coefs =
@@ -313,76 +431,19 @@ public:
     return {new_coefs, new_indices};
   }
 
-  template<typename U>
-  Polynomial<std::common_type_t<T, U>>
-  displace(const arma::Col<U> & displacement) const {
-    if (this->dim() != displacement.n_elem) {
-      throw Error(
-          "Different dimension between the displacement and polynomial term");
-    }
-
-    const auto dim = this->dim();
-
-    auto result =
-        Polynomial<std::common_type_t<T, U>>(dim);
-
-    const std::function<arma::uword(arma::uword)>
-        factorial = [&factorial](const arma::uword n) -> arma::uword {
-      if (n == 0) return 1;
-      else if (n == 1) return n;
-      else return factorial(n - 1);
-    };
-
-    const auto binomial =
-        [&factorial](const arma::uword n, const arma::uword i) -> arma::uword {
-          return factorial(n) / factorial(i) / factorial(n - i);
-        };
-
-    const auto term_displace =
-        [&binomial](const polynomial::Term<T> term,
-                    const arma::Col<U> & displacement)
-            -> Polynomial<std::common_type_t<T, U>> {
-
-          const arma::uword dim = term.dim();
-          const auto & indices = term.indices;
-
-          auto result = Polynomial<std::common_type_t<T, U>>(dim);
-
-        #pragma omp parallel for
-          for (arma::uword i = 0; i < dim; i++) {
-            auto term = Polynomial<std::common_type_t<T, U>>(dim);
-            for (arma::uword j = 0; j <= indices(i); j++) {
-              lvec variable = arma::zeros<lvec>(dim);
-              variable(i) = j;
-              term +=
-                  polynomial::Term < double > {binomial(indices(i), j) *
-                                               pow(displacement(i),
-                                                   indices(i) - j), variable};
-            }
-            result *= term;
-          }
-        };
-
-    return term_displace(*this, displacement);
-  }
-
-  template<typename U>
-  Polynomial<std::common_type_t<T,U>>
-  scale(const arma::vec & scaling) const {
-      auto result = Polynomial<std::common_type_t<T,U>>(this->term(0).scale(scaling));
-
-        #pragma omp parallel for
-      for(arma::uword i=1; i<this->coefs.n_elem; i++) {
-        result = result + this->term(i).scale(scaling);
-      }
-
-      return result;
-  }
-
-
-
 };
 
+template<typename T>
+std::vector<Polynomial<T>> transform(const arma::Mat<T> & transform_matrix) {
+  std::vector<Polynomial<T>> result[transform_matrix.n_cols];
+
+#pragma omp parallel for
+  for(arma::uword i=0; i<transform_matrix.n_cols;i++) {
+    result[i] = Polynomial<T>(transform_matrix.row(i).t(),arma::eye<lmat>(arma::size(transform_matrix)));
+  }
+
+  return result;
+}
 
 }
 }

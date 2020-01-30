@@ -100,6 +100,24 @@ struct Term {
         this->monomial);
   }
 
+  inline
+  Term<T> derivative(const arma::uvec & index) const {
+    if (index.n_elem != this->dim) {
+      throw Error("Derivative operator out of bound");
+    }
+
+    Term<T> result = *this;
+
+    for (arma::uword i = 0; i < index.n_elem; i++) {
+      for (arma::uword j = 0; j < index(i); j++) {
+        result = result.derivative(i);
+      }
+    }
+
+    return result;
+
+  }
+
   template<typename U>
   Term<std::common_type_t<T, U>>
   operator*(const Term<T> & B) const {
@@ -112,19 +130,21 @@ struct Term {
 
   template<typename U>
   Term<std::common_type_t<T, U>>
-  operator*(const polynomial::Term<U> & B) const {
+  operator*(const polynomial::Term <U> & B) const {
     if (this->dim() != B.dim()) {
-      throw Error("Different dimension between gaussian term and polynomial term");
+      throw Error(
+          "Different dimension between gaussian term and polynomial term");
     }
     return Term<T>(this->polynomial * B, this->binomial + B.binomial,
                    this->monomial + B.monomial);
   }
 
   template<typename U>
-  Term<std::common_type_t<T,U>>
-  operator*(const Polynomial<U> & B) const {
+  Term<std::common_type_t<T, U>>
+  operator*(const Polynomial <U> & B) const {
     if (this->dim() != B.dim()) {
-      throw Error("Different dimension between gaussian term and polynomial term");
+      throw Error(
+          "Different dimension between gaussian term and polynomial term");
     }
     return Term<T>(this->polynomial * B, this->binomial + B.binomial,
                    this->monomial + B.monomial);
@@ -146,7 +166,7 @@ struct Term {
     const arma::mat real_space_binomial = 2 * this->binomial;
     const arma::vec real_space_monomial = 2 * this->monomial;
 
-    const double constant_part = 1.0 /  pow(pi, this->dim()) * arma::det(eigvec);
+    const double constant_part = 1.0 / pow(pi, this->dim()) * arma::det(eigvec);
 
 
   }
@@ -156,10 +176,39 @@ struct Term {
 
 template<typename T>
 struct Gaussian {
-  Polynomial <T> polynomial;
-  arma::mat binomial;
-  arma::vec monomial;
+  std::vector<gaussian::Term<T>> terms;
+
+  explicit
+  inline
+  Gaussian(std::vector<gaussian::Term<T>> terms) :
+      terms(terms) {}
+
+  explicit
+  inline
+  Gaussian(const arma::uword dim, const T coef = 0.0) :
+      terms({gaussian::Term<T>(dim, coef)}) {}
+
+  inline
+  Gaussian(const Polynomial <T> polynomial,
+           const arma::mat & binomial,
+           const arma::vec & monomial) :
+      terms({gaussian::Term<T>(polynomial, binomial, monomial)}) {}
+
+  inline
+  Gaussian(const arma::mat & binomial,
+           const arma::vec & monomial,
+           const T coef = 1.0) :
+      terms({gaussian::Term<T>(binomial,monomial,coef)}) {}
+
+  explicit
+  inline
+  Gaussian(const arma::mat & binomial, const T coef = 1.0) :
+      terms({gaussian::Term<T>(binomial, coef)}) {}
+
+
+
 };
+
 }
 }
 #endif //MATH_GAUSSIAN_H
