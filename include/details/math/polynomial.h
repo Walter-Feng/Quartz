@@ -51,6 +51,12 @@ struct Term {
   }
 
   template<typename U>
+  Term<std::common_type_t<T,U>>
+  scale(const arma::Col<U> & scaling) const {
+      return this->at(scaling) / this->coef * (*this);
+  }
+
+  template<typename U>
   bool is_same_term(const Term<U> & term) const {
     if (this->indices == term.indices) return true;
 
@@ -70,7 +76,7 @@ struct Term {
 
   inline
   Term<T> derivative(const arma::uvec & index) const {
-    if (index >= this->indices.n_elem) {
+    if (index.n_elem != this->indices.n_elem) {
       throw Error("Derivative operator out of bound");
     }
 
@@ -342,6 +348,7 @@ public:
 
           auto result = Polynomial<std::common_type_t<T, U>>(dim);
 
+        #pragma omp parallel for
           for (arma::uword i = 0; i < dim; i++) {
             auto term = Polynomial<std::common_type_t<T, U>>(dim);
             for (arma::uword j = 0; j <= indices(i); j++) {
@@ -355,7 +362,25 @@ public:
             result *= term;
           }
         };
+
+    return term_displace(*this, displacement);
   }
+
+  template<typename U>
+  Polynomial<std::common_type_t<T,U>>
+  scale(const arma::vec & scaling) const {
+      auto result = Polynomial<std::common_type_t<T,U>>(this->term(0).scale(scaling));
+
+        #pragma omp parallel for
+      for(arma::uword i=1; i<this->coefs.n_elem; i++) {
+        result = result + this->term(i).scale(scaling);
+      }
+
+      return result;
+  }
+
+
+
 };
 
 
