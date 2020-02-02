@@ -26,7 +26,7 @@ struct Phase {
         arma::sum((this->wavenumbers * cx_double{0.0, 1.0}) % position));
   }
 
-  Phase operator*(const Phase & phase) {
+  Phase operator*(const Phase & phase) const {
     const arma::vec new_wavenumbers = this->wavenumbers + phase.wavenumbers;
     return Phase(new_wavenumbers);
   }
