@@ -1,6 +1,11 @@
 #ifndef QUARTZ
 #define QUARTZ
 
+// Third party library
+#include <armadillo>
+#include <omp.h>
+
+// Global
 #include "alias.h"
 #include "error.h"
 #include "propagate.h"
@@ -14,9 +19,11 @@
 #include "details/math/gaussian.h"
 #include "details/math/space.h"
 #include "details/math/exponential.h"
+#include "details/math/runge_kutta.h"
 
 // Methods
 #include "details/methods/dvr.h"
+#include "details/methods/md.h"
 // #include "details/methods/method_template.h"
 
 //utils

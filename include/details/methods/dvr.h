@@ -17,6 +17,8 @@ namespace method {
 namespace dvr {
 
 namespace details {
+
+inline
 cx_double kinetic_matrix_element(const long long i,
                                  const long long j,
                                  const double interval,
@@ -31,6 +33,7 @@ cx_double kinetic_matrix_element(const long long i,
   }
 }
 
+inline
 cx_double momentum_matrix_element(const long long i,
                                   const long long j,
                                   const double interval) {
@@ -42,6 +45,7 @@ cx_double momentum_matrix_element(const long long i,
   }
 }
 
+inline
 arma::cx_cube momentum_matrices(const arma::uvec & grid,
                                 const arma::mat & ranges,
                                 const arma::uword dim) {
@@ -69,6 +73,7 @@ arma::cx_cube momentum_matrices(const arma::uvec & grid,
   return result;
 }
 
+inline
 arma::cube position_matrices(const arma::mat & points) {
   arma::cube result = arma::cube(points.n_cols, points.n_cols, points.n_rows);
 #pragma omp parallel for
@@ -222,6 +227,15 @@ public:
   inline
   arma::uword dim() {
     return this->grid.n_elem;
+  }
+};
+
+template<typename T>
+struct unit : public arma::Mat<T> {
+
+  State operator*(State state) {
+    state.coefs = *this * state.coefs;
+    return state;
   }
 };
 

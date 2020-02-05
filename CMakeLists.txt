@@ -18,6 +18,9 @@ add_library(quartz SHARED
 ####################
 #  find Libraries  #
 ####################
+
+#####Armadillo######
+
 find_package(
         Armadillo
         8.500.0
@@ -30,6 +33,17 @@ if( ${ARMADILLO_FOUND} )
     message("     ARMADILLO_LIBRARIES   : " ${ARMADILLO_LIBRARIES})
     message("     ARMADILLO_INCLUDE_DIRS: " ${ARMADILLO_INCLUDE_DIRS})
 endif()
+
+######OpenMP######
+
+FIND_PACKAGE(OpenMP)
+
+if(OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
 
 include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
 include_directories(SYSTEM Catch)
@@ -55,6 +69,7 @@ target_include_directories(catch2 PUBLIC include/Catch2/)
 
 add_executable(test_math
         test/details/math/polynomial_test.cpp
+        test/details/math/gaussian_test.cpp
         )
 
 target_link_libraries(test_math catch2 quartz)

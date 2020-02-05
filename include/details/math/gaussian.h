@@ -277,7 +277,6 @@ struct Gaussian {
     return this->binomial.n_rows;
   }
 
-  template<typename T>
   arma::cx_double at(const arma::vec & position) const {
     if (position.n_elem != this->dim()) {
       throw Error("Different dimension between the gaussian term and position");

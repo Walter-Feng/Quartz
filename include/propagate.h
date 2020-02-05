@@ -11,6 +11,18 @@ using Propagator = std::function<
           const Potential &,
           const double)>;
 
+template<typename State, typename Potential>
+Propagator<State, Potential> operator+
+    (const Propagator<State, Potential> & A,
+     const Propagator<State, Potential> & B) {
+  return [A, B](const State & old_state,
+                const Potential & potential,
+                const double dt) -> State {
+
+    return A(old_state, potential, dt) + B(old_state, potential, dt);
+  };
+}
+
 
 //TODO(Rui): Check if printer can be constant
 // when the printer is going to change the value of,
@@ -27,7 +39,7 @@ propagate(const State & state,
           const Potential & potential,
           const printer::Printer<Output, State> & printer,
           const double dt,
-          const int print_level=1) {
+          const int print_level = 1) {
   //TODO(Rui): Stuff this function
 }
 
