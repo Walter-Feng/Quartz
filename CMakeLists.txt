@@ -74,5 +74,10 @@ add_executable(test_math
 
 target_link_libraries(test_math catch2 quartz)
 
+add_executable(test_utils
+        test/details/utils/check_member.cpp)
+
+target_link_libraries(test_utils catch2 quartz)
+
 add_test(NAME UNITTEST_math
          COMMAND bin/test_math)
