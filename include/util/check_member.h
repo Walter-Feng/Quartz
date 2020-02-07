@@ -21,7 +21,10 @@ private:
   std::is_same<
       decltype( std::declval<T>().time_evolve( std::declval<Args>()... ) ),
       Ret    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  >::type;  // attempt to call it and see if the return type is correct
+  >::type {
+    return nullptr;
+  }
+  // attempt to call it and see if the return type is correct
 
   template<typename>
   static constexpr std::false_type check(...);
@@ -52,7 +55,10 @@ private:
   std::is_same<
       decltype( std::declval<T>().derivative( std::declval<Args>()... ) ),
       Ret    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  >::type;  // attempt to call it and see if the return type is correct
+  >::type {
+    return nullptr;
+  }
+  // attempt to call it and see if the return type is correct
 
   template<typename>
   static constexpr std::false_type check(...);
@@ -84,7 +90,10 @@ private:
   std::is_same<
       decltype( std::declval<T>().at( std::declval<Args>()... ) ),
       Ret    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  >::type;  // attempt to call it and see if the return type is correct
+  >::type {
+    return nullptr;
+  }
+  // attempt to call it and see if the return type is correct
 
   template<typename>
   static constexpr std::false_type check(...);
@@ -95,6 +104,39 @@ public:
   static constexpr bool value = type::value;
 };
 
+
+
+template<typename, typename T>
+struct has_propagation_type {
+  static_assert(
+      std::integral_constant<T, false>::value,
+      "Second template parameter needs to be of function type.");
+};
+
+// specialization that does the checking
+
+template<typename C, typename Ret, typename... Args>
+struct has_propagation_type<C, Ret(Args...)> {
+private:
+  template<typename T>
+  static constexpr auto check(T*)
+  -> typename
+  std::is_same<
+      decltype( std::declval<T>().propagation_type( std::declval<Args>()... ) ),
+      Ret    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  >::type {
+    return nullptr;
+  }
+  // attempt to call it and see if the return type is correct
+
+  template<typename>
+  static constexpr std::false_type check(...);
+
+  typedef decltype(check<C>(0)) type;
+
+public:
+  static constexpr bool value = type::value;
+};
 
 
 

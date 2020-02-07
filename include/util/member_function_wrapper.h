@@ -1,7 +1,6 @@
 #ifndef UTIL_MEMBER_FUNCTION_WRAPPER_H
 #define UTIL_MEMBER_FUNCTION_WRAPPER_H
 
-namespace quartz {
 template<typename Function, typename T>
 auto at(const Function & function, const arma::Mat<T> positions) {
   auto result =
@@ -12,7 +11,6 @@ auto at(const Function & function, const arma::Mat<T> positions) {
   }
 
   return result;
-}
 }
 
 #endif //UTIL_MEMBER_FUNCTION_WRAPPER_H

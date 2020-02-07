@@ -1,7 +1,6 @@
 #ifndef MATH_EXPONENTIAL_H
 #define MATH_EXPONENTIAL_H
 
-namespace quartz {
 namespace math {
 namespace exponential {
 
@@ -257,5 +256,5 @@ struct Exponential {
 };
 
 }
-}
+
 #endif //MATH_EXPONENTIAL_H

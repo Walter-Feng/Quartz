@@ -1,7 +1,6 @@
 #ifndef MATH_SPACE_H
 #define MATH_SPACE_H
 
-namespace quartz {
 namespace math {
 namespace space {
 
@@ -107,5 +106,5 @@ arma::mat points_generate(const arma::uvec & grids,
 
 }
 }
-}
+
 #endif //MATH_SPACE_H

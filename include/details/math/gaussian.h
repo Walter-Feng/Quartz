@@ -4,7 +4,6 @@
 #include "polynomial.h"
 #include "exponential.h"
 
-namespace quartz {
 namespace math {
 namespace gaussian {
 
@@ -346,5 +345,5 @@ struct Gaussian {
 
 };
 }
-}
+
 #endif //MATH_GAUSSIAN_H

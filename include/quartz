@@ -2,9 +2,11 @@
 #define QUARTZ
 
 // Third party library
+
 #include <armadillo>
 #include <omp.h>
 
+namespace quartz {
 // Global
 #include "alias.h"
 #include "error.h"
@@ -27,7 +29,10 @@
 // #include "details/methods/method_template.h"
 
 //utils
+#include "util/check_member.h"
 #include "util/type_converter.h"
 #include "util/member_function_wrapper.h"
+
+}
 
 #endif

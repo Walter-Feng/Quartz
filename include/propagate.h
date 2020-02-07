@@ -3,11 +3,14 @@
 
 #include "printer.h"
 
-namespace quartz {
+enum PropagationType{
+  Schrotinger,
+  Classic
+};
 
 template<typename State, typename Potential>
 using Propagator = std::function<
-    State(const State &,
+    State(State,
           const Potential &,
           const double)>;
 
@@ -22,6 +25,11 @@ Propagator<State, Potential> operator+
     return A(old_state, potential, dt) + B(old_state, potential, dt);
   };
 }
+
+template<typename Operator, typename State, typename Potential>
+using OperatorWrapper = std::function<
+    Propagator<State, Potential>(const Operator &)
+        >;
 
 
 //TODO(Rui): Check if printer can be constant
@@ -43,6 +51,5 @@ propagate(const State & state,
   //TODO(Rui): Stuff this function
 }
 
-}
 
 #endif //QUARTZ_PROPAGATE_H

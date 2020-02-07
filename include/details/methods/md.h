@@ -1,7 +1,6 @@
 #ifndef QUARTZ_MD_H
 #define QUARTZ_MD_H
 
-namespace quartz {
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
@@ -127,7 +126,6 @@ State propagator(State state,
 }
 
 } // namespace md
-}
 }
 
 

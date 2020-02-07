@@ -6,7 +6,6 @@
 #include "propagate.h"
 #include "details/math/polynomial.h"
 
-namespace quartz {
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
@@ -94,7 +93,6 @@ public:
   }
 };
 
-}
 }
 
 #endif //METHOD_METHOD_TEMPLATE_H

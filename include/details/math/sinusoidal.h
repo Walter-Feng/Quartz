@@ -3,7 +3,6 @@
 
 #include "details/math/constants.h"
 
-namespace quartz {
 namespace math {
 
 namespace sinusoidal {
@@ -172,5 +171,5 @@ struct Sinusoidal {
   }
 };
 }
-}
+
 #endif //MATH_SINUSOIDAL_H

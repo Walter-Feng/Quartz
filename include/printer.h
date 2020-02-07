@@ -1,7 +1,6 @@
 #ifndef QUARTZ_PRINTER_H
 #define QUARTZ_PRINTER_H
 
-namespace quartz {
 namespace printer {
 template<typename Output, typename State>
 using Printer = std::function<Output(const State &, int)>;
@@ -28,7 +27,6 @@ void mute(const State & state,
 
 }
 
-}
 }
 
 #endif //QUARTZ_PRINTER_H

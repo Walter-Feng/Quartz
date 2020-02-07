@@ -8,7 +8,6 @@
 
 #include "util/type_converter.h"
 
-namespace quartz {
 namespace math {
 namespace polynomial {
 
@@ -452,7 +451,6 @@ std::vector<Polynomial<T>> transform(const arma::Mat<T> & transform_matrix) {
   return result;
 }
 
-}
 }
 
 

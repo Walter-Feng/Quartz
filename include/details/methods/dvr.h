@@ -10,7 +10,6 @@
 
 #include "util/member_function_wrapper.h"
 
-namespace quartz {
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
@@ -230,33 +229,42 @@ public:
   }
 };
 
-template<typename T>
-struct unit : public arma::Mat<T> {
+struct Operator {
 
-  State operator*(State state) {
-    state.coefs = *this * state.coefs;
+private:
+  PropagationType type = Schrotinger;
+
+public:
+  arma::Mat<cx_double> hamiltonian;
+
+  template<typename Potential>
+  Operator(const State & state,
+           const Potential & potential) :
+      hamiltonian(state.hamiltonian_matrix(potential)) {}
+
+  template<typename T>
+  Operator(const arma::Mat<T> & operator_matrix) :
+      hamiltonian(arma::conv_to<arma::cx_mat>::from(operator_matrix)) {}
+
+  inline
+  PropagationType propagation_type() const {
+    return Schrotinger;
+  }
+
+  inline
+  State operator*(State state) const {
+    state.coefs = this->hamiltonian * state.coefs;
     return state;
+  }
+
+  inline
+  Operator inv() const {
+    return Operator(arma::conv_to<arma::cx_mat>::from(arma::inv(this->hamiltonian)));
   }
 };
 
-template<typename Potential>
-State propagator(State state,
-                 const Potential & potential,
-                 const double dt) {
-  // only need the potential defined over the real space
-  // requiring the potential to have .at() as a member function
-
-  const arma::cx_mat propagation_matrix =
-      details::propagation_wrapper(state.hamiltonian_matrix(potential), dt);
-
-  state.coefs = propagation_matrix * state.coefs;
-
-  return state;
-}
-
 
 } // namespace dvr
-}
 }
 
 #endif //METHOD_DVR_H

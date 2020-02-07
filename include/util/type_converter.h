@@ -3,7 +3,6 @@
 
 #include "error.h"
 
-namespace quartz {
 namespace utils {
 
 template<typename T>
@@ -17,7 +16,6 @@ arma::cx_double convert(const double number) {
   return {number,0.0};
 }
 
-}
 }
 
 #endif //QUARTZ_TYPE_CONVERTER_H

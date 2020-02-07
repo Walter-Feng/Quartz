@@ -5,7 +5,6 @@
 #include <string>
 #include <cassert>
 
-namespace quartz {
 
 struct Error : public std::runtime_error {
   explicit Error (const std::string & error_message) :
@@ -14,6 +13,9 @@ struct Error : public std::runtime_error {
     std::runtime_error("Error: " + std::string(error_message)) {}
 };
 
+void Warning(const std::string & warning_message) {
+  std::cout << "Warning: " + warning_message;
 }
+
 
 #endif //QUARTZ_ERROR_H
