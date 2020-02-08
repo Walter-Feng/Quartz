@@ -67,6 +67,8 @@ Operator schrotinger_wrapper(const Operator & operator_matrix) {
       return (lhs.inv() * rhs.inv()) * state;
     };
 
+  }
+
 }
 
 }
