@@ -1,6 +1,8 @@
 #ifndef QUARTZ_RUNGE_KUTTA_H
 #define QUARTZ_RUNGE_KUTTA_H
 
+#include "propagate.h"
+#include "error.h"
 #include "util/check_member.h"
 
 namespace math {

@@ -18,6 +18,7 @@ namespace quartz {
 // Math
 #include "details/math/polynomial.h"
 #include "details/math/sinusoidal.h"
+#include "details/math/schrotinger_wrapper.h"
 #include "details/math/gaussian.h"
 #include "details/math/space.h"
 #include "details/math/exponential.h"

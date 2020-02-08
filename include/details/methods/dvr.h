@@ -83,16 +83,6 @@ arma::cube position_matrices(const arma::mat & points) {
   return result;
 }
 
-template<typename T>
-arma::cx_mat propagation_wrapper(const arma::Mat<T> & result, const double dt) {
-  if (!result.is_square()) {
-    throw Error("The matrix being wrapped for propagation is not square");
-  }
-  return
-      arma::inv(arma::eye(result) + 0.5 * cx_double{0.0, 1.0} * dt * result) *
-      arma::inv(arma::eye(result) - 0.5 * cx_double{0.0, 1.0} * dt * result);
-}
-
 } // namespace details
 
 struct State {
@@ -244,22 +234,43 @@ public:
 
   template<typename T>
   Operator(const arma::Mat<T> & operator_matrix) :
-      hamiltonian(arma::conv_to<arma::cx_mat>::from(operator_matrix)) {}
+      hamiltonian(operator_matrix) {}
 
   inline
   PropagationType propagation_type() const {
     return Schrotinger;
   }
 
-  inline
   State operator*(State state) const {
     state.coefs = this->hamiltonian * state.coefs;
     return state;
   }
 
+  Operator operator+(const Operator & B) const {
+    const arma::cx_mat new_mat = this->hamiltonian + B.hamiltonian;
+    return Operator(new_mat);
+  }
+
+  Operator operator-(const Operator & B) const {
+    const arma::cx_mat new_mat = this->hamiltonian - B.hamiltonian;
+    return Operator(new_mat);
+  }
+
+  Operator operator*(const Operator & B) const {
+    const arma::cx_mat new_mat = this->hamiltonian - B.hamiltonian;
+    return Operator(new_mat);
+  }
+
+  template<typename T>
+  Operator operator*(const T & B) const {
+    const arma::cx_mat new_mat = this->hamiltonian * B;
+    return Operator(new_mat);
+  }
+
   inline
   Operator inv() const {
-    return Operator(arma::conv_to<arma::cx_mat>::from(arma::inv(this->hamiltonian)));
+    const arma::cx_mat inversed = arma::inv(this->hamiltonian);
+    return Operator(inversed);
   }
 };
 
