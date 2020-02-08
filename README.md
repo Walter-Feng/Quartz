@@ -10,4 +10,4 @@ $ cmake .. -DCMAKE_PREFIX_PATH=/the/path/to/your/Armadillo/installation
 $ make -j 4
 $ make install
 ```
-which will have this library installed to `usr/local` directory.
+which will have this library installed to `/usr/local` directory.
