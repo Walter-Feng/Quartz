@@ -4,7 +4,7 @@
 #include "util/check_member.h"
 
 namespace math {
-
+namespace details {
 template<typename T>
 arma::cx_mat schrotinger_wrapper(const arma::Mat<T> & result, const double dt) {
   if (!result.is_square()) {
@@ -13,6 +13,7 @@ arma::cx_mat schrotinger_wrapper(const arma::Mat<T> & result, const double dt) {
   return
       arma::inv(arma::eye(result) + 0.5 * cx_double{0.0, 1.0} * dt * result) *
       arma::inv(arma::eye(result) - 0.5 * cx_double{0.0, 1.0} * dt * result);
+}
 }
 
 template<typename Operator, typename State, typename Potential>

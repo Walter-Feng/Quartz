@@ -13,6 +13,7 @@ struct Error : public std::runtime_error {
     std::runtime_error("Error: " + std::string(error_message)) {}
 };
 
+inline
 void Warning(const std::string & warning_message) {
   std::cout << "Warning: " + warning_message;
 }

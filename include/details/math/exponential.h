@@ -58,6 +58,11 @@ struct Term {
       wavenumbers(wavenumbers) {}
 
   inline
+  arma::uword dim() const {
+    return this->wavenumbers.n_elem;
+  }
+
+  inline
   Term<T> derivative(const arma::uword index) const {
     return {this->wavenumbers(index) * this->coef, this->wavenumbers};
   }
@@ -111,27 +116,26 @@ struct Exponential {
   }
 
   template<typename U>
-  std::common_type_t<T, U> at(const arma::Col<T> & position) {
-    if (position.n_eleme != wavenumbers.n_rows) {
+  std::common_type_t<T, U> at(const arma::Col<U> & position) const {
+    if (position.n_elem != wavenumbers.n_rows) {
       throw Error("different dimension between position and exponential term");
     }
 
-    arma::Mat<std::common_type_t<T, U>> duplicated_position
-        = arma::zeros<arma::Mat<std::common_type_t<T, U>>>(
-            arma::size(wavenumbers));
+    auto wavenumbers_with_position =
+        arma::conv_to<arma::Mat<std::common_type_t<T, U>>>::from(
+            this->wavenumbers);
 
-    duplicated_position.each_col() += position;
+    wavenumbers_with_position.each_col() %= position;
 
-    return arma::prod(
-        this->coefs %
-        arma::prod(arma::exp(this->wavenumbers % duplicated_position)).t()
+    return arma::sum(
+        this->coefs % arma::exp(arma::sum(wavenumbers_with_position)).st()
     );
   }
 
   inline
   exponential::Term<T> term(arma::uword index) const {
     if (index >= this->coefs.n_elem) {
-      return ("The specified exponential term does not exist");
+      throw Error("The specified exponential term does not exist");
     }
 
     return exponential::Term<T>(this->coefs(index),
@@ -140,7 +144,7 @@ struct Exponential {
 
   inline
   arma::uword dim() const {
-    return this->indices.n_rows;
+    return this->wavenumbers.n_rows;
   }
 
   inline
@@ -148,14 +152,9 @@ struct Exponential {
     if (index >= this->dim()) {
       throw Error("Derivative operator out of bound");
     }
-    Exponential<T> result = Exponential<T>(this->term(0).derivative(index));
 
-#pragma omp parallel for
-    for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
-      result = result + this->term(i).derivative(index);
-    }
-
-    return result;
+    return Exponential<T>(this->coefs % this->wavenumbers.row(index).st(),
+                          this->wavenumbers);
   }
 
   template<typename U>
@@ -170,15 +169,16 @@ struct Exponential {
     const arma::Col<std::common_type_t<T, U>>
         new_B_coefs = arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(
         B.coefs);
-    const arma::Col<std::common_type_t<T, U>>
-        new_this_wavenumbers = arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(
+    const arma::Mat<std::common_type_t<T, U>>
+        new_this_wavenumbers = arma::conv_to<arma::Mat<std::common_type_t<T, U>>>::from(
         this->wavenumbers);
-    const arma::Col<std::common_type_t<T, U>>
-        new_B_wavenumbers = arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(
+    const arma::Mat<std::common_type_t<T, U>>
+        new_B_wavenumbers = arma::conv_to<arma::Mat<std::common_type_t<T, U>>>::from(
         B.wavenumbers);
 
-    return {arma::join_cols(new_this_coefs, new_B_coefs),
-            arma::join_rows(new_this_wavenumbers, new_B_wavenumbers)};
+    return Exponential<std::common_type_t<T, U>>(
+        arma::join_cols(new_this_coefs, new_B_coefs),
+        arma::join_rows(new_this_wavenumbers, new_B_wavenumbers));
   }
 
   template<typename U>
@@ -200,19 +200,19 @@ struct Exponential {
     if (this->dim() != B.dim()) {
       throw Error("Different dimension between added exponential terms");
     }
-    auto new_wavenumbers = arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(
+    auto new_wavenumbers = arma::conv_to<arma::Mat<std::common_type_t<T, U>>>::from(
         this->wavenumbers);
     new_wavenumbers.each_col() += B.wavenumbers;
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = this->coefs * B.coef;
 
-    return {new_coefs, new_wavenumbers};
+    return Exponential<std::common_type_t<T,U>>(new_coefs, new_wavenumbers);
   }
 
   template<typename U>
   Exponential<std::common_type_t<T, U>>
   operator*(const Exponential<U> & B) const {
-    Exponential<std::common_type_t<T, U>> result_0 = (*this) * B.term(0);
+    Exponential <std::common_type_t<T, U>> result_0 = (*this) * B.term(0);
 
 #pragma omp parallel for
     for (arma::uword i = 1; i < B.coefs.n_elem; i++) {
@@ -251,7 +251,7 @@ struct Exponential {
     new_wavenumbers.each_col() -= B.wavenumbers;
     const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
-    return {new_coefs, new_wavenumbers};
+    return Exponential<std::common_type_t<T, U>>(new_coefs, new_wavenumbers);
   }
 };
 

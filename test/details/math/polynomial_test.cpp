@@ -1,5 +1,3 @@
-#define CATCH_CONFIG_MAIN
-
 #include <Catch2/catch.hpp>
 
 #include <quartz>
@@ -102,7 +100,7 @@ TEST_CASE("Polynomial Value") {
       result_rhs(i) = result_rhs_temp;
     }
 
-    CHECK(arma::approx_equal(result_lhs, result_rhs, "abs_diff", 1e-16));
+    CHECK(arma::approx_equal(result_lhs, result_rhs, "abs_diff", 1e-14));
 
   }
 }

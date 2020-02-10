@@ -444,7 +444,7 @@ std::vector<Polynomial<T>> transform(const arma::Mat<T> & transform_matrix) {
 
 #pragma omp parallel for
   for (arma::uword i = 0; i < transform_matrix.n_cols; i++) {
-    result[i] = Polynomial<T>(transform_matrix.row(i).t(),
+    result[i] = Polynomial<T>(transform_matrix.row(i).st(),
                               arma::eye<lmat>(arma::size(transform_matrix)));
   }
 

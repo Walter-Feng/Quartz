@@ -103,7 +103,7 @@ struct Sinusoidal {
     arma::mat center = this->translation;
     center.each_col() += position;
     return arma::sum(
-        this->coefs % arma::prod(arma::sin(center % this->freqs + is_sin)));
+        this->coefs % arma::prod(arma::sin(center % this->freqs + is_sin)).st());
   }
 
   inline
@@ -114,7 +114,7 @@ struct Sinusoidal {
 
     arma::mat freq_change = this->freqs;
     freq_change.each_col() %= arma::conv_to<arma::vec>::from(index);
-    const arma::Col<T> new_coefs = this->coefs % arma::prod(freq_change).t();
+    const arma::Col<T> new_coefs = this->coefs % arma::prod(freq_change).st();
     arma::mat new_is_sin = this->is_sin;
     new_is_sin.each_col() += - 0.5 * pi * arma::conv_to<arma::vec>::from(index);
 

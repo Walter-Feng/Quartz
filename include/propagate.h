@@ -3,6 +3,9 @@
 
 #include "printer.h"
 
+#include "util/check_member.h"
+
+
 enum PropagationType{
   Schrotinger,
   Classic
@@ -18,7 +21,7 @@ template<typename State, typename Potential>
 Propagator<State, Potential> operator+
     (const Propagator<State, Potential> & A,
      const Propagator<State, Potential> & B) {
-  return [A, B](const State & old_state,
+  return [&A, &B](const State & old_state,
                 const Potential & potential,
                 const double dt) -> State {
 
@@ -28,7 +31,7 @@ Propagator<State, Potential> operator+
 
 template<typename Operator, typename State, typename Potential>
 using OperatorWrapper = std::function<
-    Propagator<State, Potential>(const Operator &)
+    Propagator<State, Potential>(const Operator &, const Potential &)
         >;
 
 
@@ -36,19 +39,31 @@ using OperatorWrapper = std::function<
 // when the printer is going to change the value of,
 // for example, json tree
 
-//TODO(Rui): Check if the propagation method such as
-// Runge-kutta method can be integrated in a neat way
 template<typename State,
          typename Potential,
+         typename Operator,
          typename Output>
 State
 propagate(const State & state,
-          const Propagator<State, Potential> & propagator,
-          const Potential & potential,
-          const printer::Printer<Output, State> & printer,
+          const Operator & op,
+          const OperatorWrapper<Operator,State,Potential> & operator_wrapper,
+          const Potential & potential, // to propagate the time-dependent potential
+          const Printer<Output, State> & printer,
+          const arma::uword steps,
           const double dt,
           const int print_level = 1) {
-  //TODO(Rui): Stuff this function
+
+  //time dependent version, need to constantly update the propagator
+  if(has_time_evolve<Potential, void(const double &)>::value) {
+    Potential updated_potential = potential;
+
+
+
+    for(arma::uword i=1;i<=steps;i++) {
+
+    }
+  }
+
 }
 
 

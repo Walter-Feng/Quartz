@@ -140,7 +140,8 @@ public:
   Operator(const State & state,
            const Potential & potential) :
       change_list(
-          arma::join_cols(state.points.rows(state.dim(), 2 * state.dim() - 1),
+          arma::join_cols(state.points.rows(state.dim(), 2 * state.dim() - 1) /
+                          state.masses,
                           details::force(potential, state.points))) {}
 
   explicit

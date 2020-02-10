@@ -4,6 +4,7 @@
 // Third party library
 
 #include <armadillo>
+#include <iomanip>
 #include <omp.h>
 
 namespace quartz {
