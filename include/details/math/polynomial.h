@@ -1,8 +1,6 @@
 #ifndef MATH_POLYNOMIAL_H
 #define MATH_POLYNOMIAL_H
 
-#include <armadillo>
-
 #include "alias.h"
 #include "error.h"
 

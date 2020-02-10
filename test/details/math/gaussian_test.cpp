@@ -56,5 +56,25 @@ TEST_CASE("Gaussian Value") {
   }
 }
 
+TEST_CASE("Gaussian Integral") {
+  const Gaussian test = Gaussian(arma::mat{1});
+  const Gaussian wigner_transform = test.wigner_transform();
+
+  CHECK(test.integral() == std::sqrt(2. * pi));
+  CHECK(std::abs((test * test).integral() - wigner_transform.integral()) < 1e-14);
+
+  const Gaussian test_2 = Gaussian(arma::mat{2});
+  const Gaussian wigner_transform_2 = test_2.wigner_transform();
+
+  CHECK(test_2.integral() == std::sqrt(pi));
+  CHECK(std::abs((test_2 * test_2).integral() - wigner_transform_2.integral()) < 1e-14);
+
+  const Gaussian with_monomial = Gaussian(arma::mat{1},arma::vec{2});
+  const Gaussian wigner_transform_monomial = with_monomial.wigner_transform();
+  CHECK(with_monomial.integral() == std::sqrt(2. * pi) * std::exp(2));
+  CHECK((with_monomial * with_monomial).integral() == wigner_transform_monomial.integral());
+}
+
+
 
 }

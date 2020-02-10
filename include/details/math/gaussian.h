@@ -215,7 +215,6 @@ struct Gaussian {
   arma::vec monomial;
   exponential::Phase phase;
 
-  explicit
   inline
   Gaussian(const arma::uword dim, const cx_double coef = 0.0) :
       coef(coef),
@@ -224,9 +223,8 @@ struct Gaussian {
       phase(exponential::Phase(dim)) {}
 
 
-  explicit
   inline
-  Gaussian(const arma::mat & binomial) :
+  Gaussian(const arma::mat & binomial, const cx_double coef = 1.0) :
       coef(1.0),
       binomial(binomial),
       monomial(arma::zeros<arma::vec>(binomial.n_rows, binomial.n_rows)),
@@ -287,6 +285,12 @@ struct Gaussian {
   }
 
   inline
+  cx_double integral() const {
+    return this->coef * std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
+    * std::exp(0.5 * arma::dot(this->monomial, arma::inv(this->binomial) * this->monomial));
+  }
+
+  inline
   Gaussian wigner_transform() const {
     arma::vec eigenvalues;
     arma::mat eigenvectors;
@@ -305,19 +309,18 @@ struct Gaussian {
     const arma::mat momentum_space_monomial_part =
         momentum_space_binomial_part * this->phase.wavenumbers;
 
-    const double constant_part =
-        1. / std::sqrt(arma::prod(eigenvalues)) * arma::det(eigenvectors) *
-        std::pow(2.0 / pi, this->dim()) / std::exp(
-            arma::dot(this->phase.wavenumbers,
-                      momentum_space_binomial_part * this->phase.wavenumbers)
-            );
-
     const arma::mat new_binomial =
         arma::join_cols(arma::join_rows(real_space_binomial_part, zero_matrix),
                         arma::join_rows(zero_matrix, momentum_space_binomial_part));
 
     const arma::mat new_monomial = arma::join_cols(real_space_monomial_part,
                                                    momentum_space_monomial_part);
+
+    const double constant_part =
+        1. / std::sqrt(arma::prod(eigenvalues)) *
+        std::pow(1.0 / pi, this->dim()/2.0) / std::exp(
+            arma::dot(this->phase.wavenumbers,
+                      momentum_space_binomial_part * this->phase.wavenumbers));
 
     return Gaussian(new_binomial, new_monomial, this->coef * constant_part);
   }
