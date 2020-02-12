@@ -3,7 +3,7 @@
 #define METHOD_DVR_H
 
 // include only the necessary header files
-#include "propagate.h"
+#include "quartz_internal/propagate.h"
 #include "details/math/polynomial.h"
 #include "details/math/constants.h"
 #include "details/math/space.h"

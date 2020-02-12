@@ -71,7 +71,8 @@ void generic_printer(const State & state,
 
 template<typename State>
 void mute(const State & state,
-          const int print_level = 0) {
+          const int print_level = 0,
+          const bool print_header = false) {
 
 }
 

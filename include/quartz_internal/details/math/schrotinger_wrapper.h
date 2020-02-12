@@ -17,7 +17,8 @@ arma::cx_mat schrotinger_wrapper(const arma::Mat<T> & result, const double dt) {
 }
 
 template<typename Operator, typename State, typename Potential>
-Operator schrotinger_wrapper(const Operator & operator_matrix) {
+Propagator<State> schrotinger_wrapper(const Operator & operator_matrix,
+                                      const Potential & potential) {
   static_assert(has_propagation_type<Operator, PropagationType(void)>::value,
                 "Propagation type not specified");
 
@@ -30,9 +31,8 @@ Operator schrotinger_wrapper(const Operator & operator_matrix) {
   }
 
   if (has_time_evolve<Potential, void(const double &)>::value) {
-    return [&operator_matrix](State state,
-                              const Potential & potential,
-                              const double dt) -> State {
+    return [&operator_matrix, &potential](const State & state,
+                                          const double dt) -> State {
 
       Potential potential_at_half_dt = potential;
       potential_at_half_dt.time_evolve(0.5 * dt);
@@ -54,7 +54,6 @@ Operator schrotinger_wrapper(const Operator & operator_matrix) {
 
   if (has_time_evolve<Potential, void(const double &)>::value) {
     return [&operator_matrix](State state,
-                              const Potential & potential,
                               const double dt) -> State {
 
       const Operator lhs =

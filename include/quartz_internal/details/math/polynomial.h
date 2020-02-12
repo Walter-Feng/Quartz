@@ -2,7 +2,7 @@
 #define MATH_POLYNOMIAL_H
 
 #include "alias.h"
-#include "error.h"
+#include "quartz_internal/error.h"
 
 #include "util/type_converter.h"
 

@@ -286,8 +286,20 @@ struct Gaussian {
 
   inline
   cx_double integral() const {
-    return this->coef * std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
-    * std::exp(0.5 * arma::dot(this->monomial, arma::inv(this->binomial) * this->monomial));
+
+    const arma::cx_vec new_monomial =
+        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
+
+    return this->coef *
+           std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
+           * std::exp(0.5 * arma::dot(new_monomial, arma::inv(this->binomial) *
+                                                    new_monomial));
+  }
+
+  inline
+  Gaussian conj() const {
+    return Gaussian(this->binomial, this->monomial, this->phase.conj(),
+                    std::conj(this->coef));
   }
 
   inline
@@ -311,14 +323,15 @@ struct Gaussian {
 
     const arma::mat new_binomial =
         arma::join_cols(arma::join_rows(real_space_binomial_part, zero_matrix),
-                        arma::join_rows(zero_matrix, momentum_space_binomial_part));
+                        arma::join_rows(zero_matrix,
+                                        momentum_space_binomial_part));
 
     const arma::mat new_monomial = arma::join_cols(real_space_monomial_part,
                                                    momentum_space_monomial_part);
 
     const double constant_part =
         1. / std::sqrt(arma::prod(eigenvalues)) *
-        std::pow(1.0 / pi, this->dim()/2.0) / std::exp(
+        std::pow(1.0 / pi, this->dim() / 2.0) / std::exp(
             arma::dot(this->phase.wavenumbers,
                       momentum_space_binomial_part * this->phase.wavenumbers));
 

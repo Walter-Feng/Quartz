@@ -9,31 +9,31 @@
 
 namespace quartz {
 // Global
-#include "alias.h"
-#include "error.h"
-#include "propagate.h"
+#include "quartz_internal/alias.h"
+#include "quartz_internal/error.h"
+#include "quartz_internal/propagate.h"
 
 
 // Details
 
 // Math
-#include "details/math/polynomial.h"
-#include "details/math/sinusoidal.h"
-#include "details/math/schrotinger_wrapper.h"
-#include "details/math/gaussian.h"
-#include "details/math/space.h"
-#include "details/math/exponential.h"
-#include "details/math/runge_kutta.h"
+#include "quartz_internal/details/math/polynomial.h"
+#include "quartz_internal/details/math/sinusoidal.h"
+#include "quartz_internal/details/math/schrotinger_wrapper.h"
+#include "quartz_internal/details/math/gaussian.h"
+#include "quartz_internal/details/math/space.h"
+#include "quartz_internal/details/math/exponential.h"
+#include "quartz_internal/details/math/runge_kutta.h"
 
 // Methods
-#include "details/methods/dvr.h"
-#include "details/methods/md.h"
-// #include "details/methods/method_template.h"
+#include "quartz_internal/details/methods/dvr.h"
+#include "quartz_internal/details/methods/md.h"
+// #include "quartz_internal/details/methods/method_template.h"
 
 //utils
-#include "util/check_member.h"
-#include "util/type_converter.h"
-#include "util/member_function_wrapper.h"
+#include "quartz_internal/util/check_member.h"
+#include "quartz_internal/util/type_converter.h"
+#include "quartz_internal/util/member_function_wrapper.h"
 
 }
 

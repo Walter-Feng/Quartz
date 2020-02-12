@@ -48,11 +48,20 @@ endif()
 include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
 include_directories(SYSTEM Catch)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
 target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
 
 install(TARGETS quartz
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h*")
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "quartz")
 
 ####################
 #       Test       #
@@ -63,8 +72,8 @@ install(TARGETS quartz
 #      Catch2      #
 ####################
 
-add_library(catch2 SHARED include/Catch2/Catch_main.cpp)
-target_include_directories(catch2 PUBLIC include/Catch2/)
+add_library(catch2 SHARED include/quartz_internal/Catch2/Catch_main.cpp)
+target_include_directories(catch2 PUBLIC include/quartz_internal/Catch2/)
 
 add_executable(test_core
         test/printer.cpp

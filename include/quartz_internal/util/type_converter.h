@@ -1,7 +1,7 @@
 #ifndef QUARTZ_TYPE_CONVERTER_H
 #define QUARTZ_TYPE_CONVERTER_H
 
-#include "error.h"
+#include "quartz_internal/error.h"
 
 namespace utils {
 

@@ -1,14 +1,14 @@
 #ifndef QUARTZ_RUNGE_KUTTA_H
 #define QUARTZ_RUNGE_KUTTA_H
 
-#include "propagate.h"
-#include "error.h"
+#include "quartz_internal/propagate.h"
+#include "quartz_internal/error.h"
 #include "util/check_member.h"
 
 namespace math {
 
 template<typename Operator, typename State, typename Potential>
-Propagator<State, Potential>
+Propagator<State>
 runge_kutta_2(const Operator & liouville_operator,
               const Potential & potential) {
 
@@ -21,9 +21,8 @@ runge_kutta_2(const Operator & liouville_operator,
   }
 
   if (has_time_evolve<Potential, void(const double &)>::value) {
-    return [&liouville_operator](State state,
-                                 const Potential & potential,
-                                 const double dt) -> State {
+    return [&liouville_operator, &potential](const State & state,
+                                             const double dt) -> State {
 
       Potential potential_at_half_dt = potential;
       potential_at_half_dt.time_evolve(0.5 * dt);
@@ -41,8 +40,7 @@ runge_kutta_2(const Operator & liouville_operator,
     };
   }
 
-  return [&liouville_operator](State state,
-                               const Potential & potential,
+  return [&liouville_operator, &potential](const State & state,
                                const double dt) -> State {
     const State k1 = dt * (liouville_operator * state);
     const State k2 = dt * (liouville_operator * (0.5 * k1 + state));
@@ -52,7 +50,7 @@ runge_kutta_2(const Operator & liouville_operator,
 }
 
 template<typename Operator, typename State, typename Potential>
-Propagator<State, Potential>
+Propagator<State>
 runge_kutta_4(const Operator & liouville_operator,
               const Potential & potential) {
 
@@ -65,9 +63,8 @@ runge_kutta_4(const Operator & liouville_operator,
   }
 
   if (has_time_evolve<Potential, void(const double &)>::value) {
-    return [&liouville_operator](State state,
-                                 const Potential & potential,
-                                 const double dt) -> State {
+    return [&liouville_operator, &potential](const State & state,
+                                             const double dt) -> State {
 
       Potential potential_at_half_dt = potential;
       potential_at_half_dt.time_evolve(0.5 * dt);
@@ -88,9 +85,8 @@ runge_kutta_4(const Operator & liouville_operator,
     };
   }
 
-  return [&liouville_operator](State state,
-                               const Potential & potential,
-                               const double dt) -> State {
+  return [&liouville_operator, &potential](const State & state,
+                                           const double dt) -> State {
     const State k1 = dt * (liouville_operator * state);
     const State k2 = dt * (liouville_operator * (0.5 * k1 + state));
     const State k3 = dt * (liouville_operator * (0.5 * k2 + state));
