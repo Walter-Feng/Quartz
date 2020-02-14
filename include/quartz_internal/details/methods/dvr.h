@@ -125,8 +125,10 @@ public:
       coefs(at(initial, points)),
       grid(grid),
       ranges(range),
-      masses(arma::ones<arma::vec>(arma::prod(grid))
-      ) {
+      masses(arma::ones<arma::vec>(arma::prod(grid))),
+      positional_matrices(dvr::details::position_matrices(points)),
+      momentum_matrices(
+          dvr::details::momentum_matrices(grid, range, range.n_rows)) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -139,7 +141,10 @@ public:
       coefs(coefs),
       grid(grid),
       ranges(range),
-      masses(arma::ones<arma::vec>(arma::prod(grid))) {
+      masses(arma::ones<arma::vec>(arma::prod(grid))),
+      positional_matrices(dvr::details::position_matrices(points)),
+      momentum_matrices(
+          dvr::details::momentum_matrices(grid, range, range.n_rows)) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -147,7 +152,7 @@ public:
 
 
   inline
-  arma::cx_mat kinetic_energy_matrix() {
+  arma::cx_mat kinetic_energy_matrix() const {
     const long long narrowed_dim = arma::prod(this->grid);
 
     arma::cx_mat result = arma::cx_mat(narrowed_dim, narrowed_dim);
@@ -176,7 +181,7 @@ public:
   }
 
   template<typename Potential>
-  arma::cx_mat hamiltonian_matrix(const Potential & potential) {
+  arma::cx_mat hamiltonian_matrix(const Potential & potential) const {
     const arma::vec potential_diag = at(potential, this->points);
 
     return this->kinetic_energy_matrix() + arma::diagmat(potential_diag);
@@ -184,38 +189,43 @@ public:
 
 
   inline
-  arma::vec positional_expectation() {
+  arma::vec positional_expectation() const {
     arma::vec result = arma::vec(this->dim());
 #pragma omp parallel for
     for (arma::uword i = 0; i < result.n_elem; i++) {
       const cx_double dimension_result =
-          arma::dot(this->coefs,
+          arma::cdot(this->coefs,
                     this->positional_matrices.slice(i) * this->coefs);
       assert(std::abs(dimension_result.imag()) < 1e-8);
       result(i) = std::real(dimension_result);
     }
 
-    return result;
+    return result / this->norm() / this->norm();
   }
 
   inline
-  arma::vec momentum_expectation() {
+  arma::vec momentum_expectation() const {
     arma::vec result = arma::vec(this->dim());
 #pragma omp parallel for
     for (arma::uword i = 0; i < result.n_elem; i++) {
       const cx_double dimension_result =
-          arma::dot(this->coefs,
+          arma::cdot(this->coefs,
                     this->momentum_matrices.slice(i) * this->coefs);
       assert(std::abs(dimension_result.imag()) < 1e-8);
       result(i) = std::real(dimension_result);
     }
 
-    return result;
+    return result / this->norm() / this->norm();
   }
 
   inline
-  arma::uword dim() {
+  arma::uword dim() const {
     return this->grid.n_elem;
+  }
+
+  inline
+  double norm() const {
+    return arma::norm(this->coefs);
   }
 };
 
@@ -234,7 +244,7 @@ public:
 
   template<typename T>
   Operator(const arma::Mat<T> & operator_matrix) :
-      hamiltonian(operator_matrix) {}
+      hamiltonian(arma::conv_to<arma::cx_mat>::from(operator_matrix)) {}
 
   inline
   PropagationType propagation_type() const {
@@ -257,7 +267,7 @@ public:
   }
 
   Operator operator*(const Operator & B) const {
-    const arma::cx_mat new_mat = this->hamiltonian - B.hamiltonian;
+    const arma::cx_mat new_mat = this->hamiltonian * B.hamiltonian;
     return Operator(new_mat);
   }
 

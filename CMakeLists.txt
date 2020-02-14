@@ -9,7 +9,7 @@ include(GNUInstallDirs)
 
 enable_testing()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 add_library(quartz SHARED
             src/wrapper.cpp
@@ -88,6 +88,8 @@ add_executable(test_math
         test/details/math/exponential_test.cpp
         test/details/math/polynomial_test.cpp
         test/details/math/gaussian_test.cpp
+        test/details/math/runge_kutta_test.cpp
+        test/details/math/schrotinger_wrapper.cpp
         )
 
 target_link_libraries(test_math catch2 quartz)
@@ -96,6 +98,12 @@ add_executable(test_utils
         test/utils/check_member.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
+
+add_executable(test_methods
+        test/details/methods/dvr.cpp
+        )
+
+target_link_libraries(test_methods catch2 quartz)
 
 add_test(NAME UNITTEST_math
          COMMAND bin/test_math)

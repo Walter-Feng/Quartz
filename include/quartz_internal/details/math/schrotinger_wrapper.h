@@ -4,17 +4,6 @@
 #include "util/check_member.h"
 
 namespace math {
-namespace details {
-template<typename T>
-arma::cx_mat schrotinger_wrapper(const arma::Mat<T> & result, const double dt) {
-  if (!result.is_square()) {
-    throw Error("The matrix being wrapped for propagation is not square");
-  }
-  return
-      arma::inv(arma::eye(result) + 0.5 * cx_double{0.0, 1.0} * dt * result) *
-      arma::inv(arma::eye(result) - 0.5 * cx_double{0.0, 1.0} * dt * result);
-}
-}
 
 template<typename Operator, typename State, typename Potential>
 Propagator<State> schrotinger_wrapper(const Operator & operator_matrix,
@@ -30,9 +19,12 @@ Propagator<State> schrotinger_wrapper(const Operator & operator_matrix,
         "Schrotinger wrapper is only suitable for Schrotinger's method");
   }
 
-  if (has_time_evolve<Potential, void(const double &)>::value) {
+  if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
     return [&operator_matrix, &potential](const State & state,
                                           const double dt) -> State {
+
+      const arma::cx_mat unit_matrix = arma::eye<arma::cx_mat>
+          (arma::size(operator_matrix.hamiltonian));
 
       Potential potential_at_half_dt = potential;
       potential_at_half_dt.time_evolve(0.5 * dt);
@@ -41,34 +33,32 @@ Propagator<State> schrotinger_wrapper(const Operator & operator_matrix,
                                                     potential_at_half_dt);
 
       const Operator lhs =
-          arma::eye(arma::size(operator_matrix.hamiltonian))
+          Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
           + 0.5 * dt * cx_double{0.0, 1.0} * operator_at_half_dt;
 
       const Operator rhs =
-          arma::eye(arma::size(operator_matrix.hamiltonian))
+          Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
           - 0.5 * dt * cx_double{0.0, 1.0} * operator_at_half_dt;
 
-      return (lhs.inv() * rhs.inv()) * state;
+      return (lhs.inv() * rhs) * state;
     };
   }
+  return [&operator_matrix](const State & state,
+                            const double dt) -> State {
 
-  if (has_time_evolve<Potential, void(const double &)>::value) {
-    return [&operator_matrix](State state,
-                              const double dt) -> State {
+    const arma::cx_mat unit_matrix = arma::eye<arma::cx_mat>
+        (arma::size(operator_matrix.hamiltonian));
 
-      const Operator lhs =
-          arma::eye(arma::size(operator_matrix.hamiltonian))
-          + 0.5 * dt * cx_double{0.0, 1.0} * operator_matrix;
+    const Operator lhs =
+        Operator(unit_matrix) +
+        operator_matrix *( 0.5 * dt * cx_double{0.0, 1.0});
 
-      const Operator rhs =
-          arma::eye(arma::size(operator_matrix.hamiltonian))
-          - 0.5 * dt * cx_double{0.0, 1.0} * operator_matrix;
+    const Operator rhs =
+        Operator(unit_matrix) -
+        operator_matrix *( 0.5 * dt * cx_double{0.0, 1.0});
 
-      return (lhs.inv() * rhs.inv()) * state;
-    };
-
-  }
-
+    return (lhs.inv() * rhs) * state;
+  };
 }
 
 }

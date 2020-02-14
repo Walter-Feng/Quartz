@@ -94,11 +94,11 @@ arma::mat points_generate(const arma::uvec & grids,
 
   const auto iterations = space::auto_iteration_over_dims(grids);
 
-  arma::mat centers = arma::mat();
+  arma::mat centers = arma::mat(arma::size(iterations));
 
   #pragma omp parallel for
   for (arma::uword i = 0; i < iterations.n_cols; i++) {
-    centers = arma::join_rows(centers, iterations.col(i) % steps + begin_list);
+    centers.col(i) = iterations.col(i) % steps + begin_list;
   }
 
   return centers;

@@ -19,7 +19,7 @@ using Propagator = std::function<
 template<typename State>
 Propagator<State> operator+
     (const Propagator<State> & A,
-     const Propagator<State,> & B) {
+     const Propagator<State> & B) {
   return [&A, &B](const State & old_state,
                   const double dt) -> State {
 

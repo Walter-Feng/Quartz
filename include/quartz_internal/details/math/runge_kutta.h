@@ -20,7 +20,7 @@ runge_kutta_2(const Operator & liouville_operator,
         "Runge-Kutta method may not be suitable for Schrotinger's method");
   }
 
-  if (has_time_evolve<Potential, void(const double &)>::value) {
+  if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
     return [&liouville_operator, &potential](const State & state,
                                              const double dt) -> State {
 
@@ -41,7 +41,7 @@ runge_kutta_2(const Operator & liouville_operator,
   }
 
   return [&liouville_operator, &potential](const State & state,
-                               const double dt) -> State {
+                                           const double dt) -> State {
     const State k1 = dt * (liouville_operator * state);
     const State k2 = dt * (liouville_operator * (0.5 * k1 + state));
 
@@ -62,7 +62,7 @@ runge_kutta_4(const Operator & liouville_operator,
         "Runge-Kutta method may not be suitable for Schrotinger's method");
   }
 
-  if (has_time_evolve<Potential, void(const double &)>::value) {
+  if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
     return [&liouville_operator, &potential](const State & state,
                                              const double dt) -> State {
 
