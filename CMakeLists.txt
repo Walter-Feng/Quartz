@@ -76,7 +76,7 @@ add_library(catch2 SHARED include/quartz_internal/Catch2/Catch_main.cpp)
 target_include_directories(catch2 PUBLIC include/quartz_internal/Catch2/)
 
 add_executable(test_core
-        test/printer.cpp
+        test/printer_test.cpp
         )
 
 target_link_libraries(test_core catch2 quartz)
@@ -89,18 +89,18 @@ add_executable(test_math
         test/details/math/polynomial_test.cpp
         test/details/math/gaussian_test.cpp
         test/details/math/runge_kutta_test.cpp
-        test/details/math/schrotinger_wrapper.cpp
+        test/details/math/schrotinger_wrapper_test.cpp
         )
 
 target_link_libraries(test_math catch2 quartz)
 
 add_executable(test_utils
-        test/utils/check_member.cpp)
+        test/utils/check_member_test.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
 
 add_executable(test_methods
-        test/details/methods/dvr.cpp
+        test/details/methods/dvr_test.cpp
         )
 
 target_link_libraries(test_methods catch2 quartz)

@@ -40,7 +40,7 @@ TEST_CASE("Check members") {
               Polynomial<cx_double>(const arma::uword &)>::value);
 
     CHECK(!has_derivative<Polynomial<double>,
-              Polynomial<cx_double>(const arma::uword &)>::value);
+        Polynomial<cx_double>(const arma::uword &)>::value);
 
     CHECK(has_derivative<Sinusoidal<double>,
               Sinusoidal<double>(const arma::uword &)>::value);
@@ -58,7 +58,7 @@ TEST_CASE("Check members") {
               cx_double(const arma::cx_vec &)>::value);
 
     CHECK(has_at<Polynomial<double>,
-        cx_double(const arma::cx_vec &)>::value);
+              cx_double(const arma::cx_vec &)>::value);
 
     CHECK(has_at<Sinusoidal<double>,
               double(const arma::vec &)>::value);
@@ -67,4 +67,3 @@ TEST_CASE("Check members") {
 }
 
 }
-
