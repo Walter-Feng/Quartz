@@ -41,7 +41,7 @@ template<typename State,
     typename Potential,
     typename Operator,
     typename Output>
-State
+std::pair<State, Output>
 propagate(const State & initial_state,
           const Operator & op,
           const OperatorWrapper<Operator, State, Potential> & operator_wrapper,
@@ -69,7 +69,7 @@ propagate(const State & initial_state,
       const Propagator<State> propagator =
           operator_wrapper(op, updated_potential);
       state = propagator(state, dt);
-      printer(state, print_level);
+      printer(state, i * dt, print_level);
       updated_potential.time_evolve(dt);
     }
   }
@@ -89,7 +89,7 @@ propagate(const State & initial_state,
 
     for(arma::uword i = 1; i <= steps; i++) {
       state = propagator(state, potential, dt);
-      printer(state, print_level);
+      printer(state, i * dt, print_level);
     }
   }
 
