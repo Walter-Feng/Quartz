@@ -18,7 +18,7 @@ TEST_CASE("Propagate") {
                            arma::mat{{-5, 5}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
-                                                             lmat{1});
+                                                             lmat{2});
 
     const auto op = method::dvr::Operator(initial_state, harmonic_potential);
 
@@ -31,7 +31,7 @@ TEST_CASE("Propagate") {
               op,
               wrapper,
               harmonic_potential,
-              generic_printer<method::dvr::State>, 500, dt);
+              generic_printer<method::dvr::State>, 10, dt, 2);
 
 
   }

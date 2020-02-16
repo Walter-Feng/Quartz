@@ -176,7 +176,7 @@ public:
     Polynomial<T> result = Polynomial<T>(this->term(0).derivative(index));
 
 #pragma omp parallel for
-    for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
+    for (arma::uword i = 1; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).derivative(index);
     }
 
