@@ -39,20 +39,19 @@ using OperatorWrapper = std::function<
 
 template<typename State,
     typename Potential,
-    typename Operator,
-    typename Output>
-std::pair<State, Output>
-propagate(const State & initial_state,
+    typename Operator>
+State
+propagate(const State initial_state,
           const Operator & op,
           const OperatorWrapper<Operator, State, Potential> & operator_wrapper,
           const Potential & potential,
-          const Printer<Output, State> & printer,
+          const Printer<State> & printer,
           const arma::uword steps,
           const double dt,
           const int print_level = 1) {
 
   //time dependent version, need to constantly update the propagator
-  if (has_time_evolve<Potential, void(const double &)>::value) {
+  if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
 
     Potential updated_potential = potential;
 
@@ -61,15 +60,13 @@ propagate(const State & initial_state,
     std::cout << "Library: Quartz" << std::endl;
     std::cout << "ver.   : -0.0.1" << std::endl;
 
-    printer(initial_state, print_level, true);
+    printer(initial_state, 0.0, print_level, true);
 
     State state = initial_state;
 
     for (arma::uword i = 1; i <= steps; i++) {
-      const Propagator<State> propagator =
-          operator_wrapper(op, updated_potential);
-      state = propagator(state, dt);
-      printer(state, i * dt, print_level);
+      state = std::move(propagator(state, dt));
+      printer(state, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
   }
@@ -81,18 +78,20 @@ propagate(const State & initial_state,
     std::cout << "Library: Quartz" << std::endl;
     std::cout << "ver.   : -0.0.1" << std::endl;
 
-    printer(initial_state, print_level, true);
+    printer(initial_state, 0.0, print_level, true);
 
     State state = initial_state;
     const Propagator<State> propagator =
         operator_wrapper(op, potential);
 
     for(arma::uword i = 1; i <= steps; i++) {
-      state = propagator(state, potential, dt);
-      printer(state, i * dt, print_level);
+      state = propagator(state, dt);
+      printer(state, i * dt, print_level, false);
     }
   }
 
+  std::cout << std::endl;
+  std::cout << "Quartz terminated normally." << std::endl;
 }
 
 

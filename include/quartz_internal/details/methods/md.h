@@ -9,33 +9,16 @@ namespace md {
 namespace details {
 
 template<typename Potential>
-arma::vec force(const Potential & potential,
-                const arma::vec & position) {
-
-//TODO(Rui): It seems that the potential function does not need to return
-// potential struct itself for its derivatives.
-//  static_assert(has_derivative<Potential, Potential(arma::uword)>::value,
-//                "The potential provided does not allow derivative, "
-//                "thus unable to calculate force.");
-
-  arma::vec result = arma::vec(position.n_elem);
-
-#pragma omp parallel for
-  for (arma::uword i = 0; i < position.n_elem; i++) {
-    result(i) = potential.derivative(i).at(position);
-  }
-
-  return result;
-}
-
-template<typename Potential>
 arma::mat force(const Potential & potential,
                 const arma::mat & positions) {
   arma::mat result = arma::mat(arma::size(positions));
 
 #pragma omp parallel for
   for (arma::uword i = 0; i < positions.n_cols; i++) {
-    result.col(i) = force(potential, positions.col(i));
+    const arma::vec position = positions.col(i);
+    for (arma::uword j = 0; j < positions.n_rows; j++) {
+      result(j,i) = - potential.derivative(j).at(position);
+    }
   }
 
   return result;
@@ -56,7 +39,7 @@ public:
         const arma::mat & range,
         const arma::vec & masses) :
       points(math::space::points_generate(grid, range)),
-      weights(at(initial, points)),
+      weights(arma::real(at(initial, points))),
       masses(masses) {
     if (grid.n_rows != range.n_rows) {
       throw Error("Different dimension between the grid and the range");
@@ -71,7 +54,7 @@ public:
         const arma::uvec & grid,
         const arma::mat & range) :
       points(math::space::points_generate(grid, range)),
-      weights(at(initial, points)),
+      weights(arma::real(at(initial, points))),
       masses(arma::ones<arma::vec>(arma::prod(grid))) {
     if (grid.n_elem % 2 != 0) {
       throw Error("Odd number of dimension - it is not likely a phase space");
@@ -106,14 +89,20 @@ public:
   }
 
   inline
+  State normalise() const {
+    return State(this->points, this->weights / arma::sum(this->weights),
+                 this->masses);
+  }
+
+  inline
   arma::vec positional_expectation() const {
 
     arma::uword dim = this->dim();
 
     arma::mat points_copy_positional_part = this->points.rows(0, dim - 1);
-    points_copy_positional_part.each_row() %= weights.t();
+    points_copy_positional_part.each_row() %= this->weights.t();
 
-    return arma::sum(points_copy_positional_part, 1);
+    return arma::sum(points_copy_positional_part, 1) / arma::sum(this->weights);
   }
 
   inline
@@ -121,32 +110,37 @@ public:
     arma::uword dim = this->dim();
 
     arma::mat points_copy_momentum_part = this->points.rows(dim, 2 * dim - 1);
-    points_copy_momentum_part.each_row() %= weights.t();
+    points_copy_momentum_part.each_row() %= this->weights.t();
 
-    return arma::sum(points_copy_momentum_part, 1);
+    return arma::sum(points_copy_momentum_part, 1) / arma::sum(this->weights);
+  }
+
+  State operator+(const State & B) const {
+    if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
+        !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
+      throw Error("Different md states are being added");
+    }
+
+    return State(this->points + B.points, this->weights, this->masses);
+  }
+
+  State operator*(const double B) const {
+    return State(this->points * B, this->weights, this->masses);
   }
 };
 
-
+template<typename Potential>
 struct Operator {
 
 private:
   PropagationType type = Classic;
 
 public:
-  arma::mat change_list;
+  Potential potential;
 
-  template<typename Potential>
   Operator(const State & state,
            const Potential & potential) :
-      change_list(
-          arma::join_cols(state.points.rows(state.dim(), 2 * state.dim() - 1) /
-                          state.masses,
-                          details::force(potential, state.points))) {}
-
-  explicit
-  Operator(const arma::mat & change_list) :
-      change_list(change_list) {}
+      potential(potential) {}
 
 
   inline
@@ -156,28 +150,15 @@ public:
 
   State operator*(const State & state) const {
 
-    if (this->change_list.n_rows != state.points.n_rows ||
-        this->change_list.n_cols != state.points.n_cols) {
-      throw Error("The operator does not match the state");
-    }
+    arma::mat p_submatrix = state.points.rows(state.dim(), 2 * state.dim() - 1);
+    p_submatrix.each_col() /= state.masses;
 
-    return State(this->change_list, state.weights, state.masses);
-  }
+    const arma::mat change_list =
+        arma::join_cols(p_submatrix,
+                        details::force(potential,
+                                       state.points.rows(0, state.dim() - 1)));
 
-  Operator operator+(const Operator & B) const {
-    const arma::mat new_change = this->change_list + B.change_list;
-    return Operator(new_change);
-  }
-
-  Operator operator-(const Operator & B) const {
-    const arma::mat new_change = this->change_list - B.change_list;
-    return Operator(new_change);
-  }
-
-  template<typename T>
-  Operator operator*(const T & B) const {
-    const arma::mat new_change = this->change_list * B;
-    return Operator(new_change);
+    return State(change_list, state.weights, state.masses);
   }
 
 };

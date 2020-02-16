@@ -3,17 +3,17 @@
 
 #include "util/check_member.h"
 
-template<typename Output, typename State>
-using Printer = std::function<Output(const State & state,
-                                     const double time,
-                                     const int print_level,
-                                     const bool print_header)>;
+template<typename State>
+using Printer = std::function<void(const State & state,
+                                   const double time,
+                                   const int print_level,
+                                   const bool print_header)>;
 
 template<typename State>
-void generic_printer(const State & state,
-                     const double time,
-                     const int print_level = 1,
-                     const bool print_header = false) {
+Printer<State> generic_printer = [](const State & state,
+                                    const double time,
+                                    const int print_level = 1,
+                                    const bool print_header = 1) -> void {
 
   static_assert(has_positional_expectation<State, arma::vec(void)>::value,
                 "The state does not support exporting positional expectation values, "
@@ -32,9 +32,11 @@ void generic_printer(const State & state,
   if (print_level == 1) {
     const arma::vec real_space_expectation = state.positional_expectation();
     if (print_header) {
-      std::cout << std::setw(width) <<  "Time |";
-      std::cout << std::setw(width * real_space_expectation.n_elem) << "Positional |" << std::endl;
-      for (arma::uword i = 0; i < width * (real_space_expectation.n_elem + 1); i++) {
+      std::cout << std::setw(width) << "Time |";
+      std::cout << std::setw(width * real_space_expectation.n_elem)
+                << "Positional |" << std::endl;
+      for (arma::uword i = 0;
+           i < width * (real_space_expectation.n_elem + 1); i++) {
         std::cout << "=";
       }
       std::cout << std::endl;
@@ -42,7 +44,8 @@ void generic_printer(const State & state,
       std::cout << std::setw(width) << std::setprecision(precision);
     }
 
-    arma::join_rows(arma::vec{time}, real_space_expectation.t()).raw_print(std::cout);
+    arma::join_rows(arma::vec{time}, real_space_expectation.t()).raw_print(
+        std::cout);
   }
 
   if (print_level >= 2) {
@@ -55,14 +58,14 @@ void generic_printer(const State & state,
     const arma::vec momentum_expectation = state.momentum_expectation();
 
     if (print_header) {
-      std::cout << std::setw(width) <<  "Time |";
+      std::cout << std::setw(width) << "Time |";
       std::cout << std::setw(width * real_space_expectation.n_elem)
                 << "Positional |";
       std::cout << std::setw(width * momentum_expectation.n_elem)
                 << "Momentum |";
       std::cout << std::endl;
       for (arma::uword i = 0; i < width * (real_space_expectation.n_elem + 1) +
-                                      width * momentum_expectation.n_elem; i++) {
+                                  width * momentum_expectation.n_elem; i++) {
         std::cout << "=";
       }
       std::cout << std::endl;
@@ -70,10 +73,11 @@ void generic_printer(const State & state,
     }
 
     arma::join_rows(arma::vec{time}, arma::join_rows(real_space_expectation.t(),
-                    momentum_expectation.t())).raw_print(std::cout);
+                                                     momentum_expectation.t())).raw_print(
+        std::cout);
   }
 
-}
+};
 
 
 template<typename State>

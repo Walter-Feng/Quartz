@@ -77,6 +77,7 @@ target_include_directories(catch2 PUBLIC include/quartz_internal/Catch2/)
 
 add_executable(test_core
         test/printer_test.cpp
+        test/propagate_test.cpp
         )
 
 target_link_libraries(test_core catch2 quartz)
@@ -101,6 +102,7 @@ target_link_libraries(test_utils catch2 quartz)
 
 add_executable(test_methods
         test/details/methods/dvr_test.cpp
+        test/details/methods/md_test.cpp
         )
 
 target_link_libraries(test_methods catch2 quartz)

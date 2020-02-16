@@ -32,8 +32,8 @@ runge_kutta_2(const Operator & liouville_operator,
 
       const Operator operator_at_half_dt = Operator(state, potential_at_half_dt);
 
-      const State k1 = dt * (liouville_operator * state);
-      const State k2 = dt * (operator_at_half_dt * (0.5 * k1 + state));
+      const State k1 = (liouville_operator * state) * dt;
+      const State k2 = (operator_at_half_dt * (k1 * 0.5 + state)) * dt;
 
 
       return state + k2;
@@ -42,8 +42,8 @@ runge_kutta_2(const Operator & liouville_operator,
 
   return [&liouville_operator, &potential](const State & state,
                                            const double dt) -> State {
-    const State k1 = dt * (liouville_operator * state);
-    const State k2 = dt * (liouville_operator * (0.5 * k1 + state));
+    const State k1 = (liouville_operator * state) * dt;
+    const State k2 = (liouville_operator * (k1 * 0.5 + state)) * dt;
 
     return state + k2;
   };
@@ -75,25 +75,25 @@ runge_kutta_4(const Operator & liouville_operator,
       const Operator operator_at_half_dt = Operator(state, potential_at_half_dt);
       const Operator operator_at_dt = Operator(state, potential_at_dt);
 
-      const State k1 = dt * (liouville_operator * state);
-      const State k2 = dt * (operator_at_half_dt * (0.5 * k1 + state));
-      const State k3 = dt * (operator_at_half_dt * (0.5 * k2 + state));
-      const State k4 = dt * (operator_at_dt * (state + k3));
+      const State k1 = (liouville_operator * state) * dt;
+      const State k2 = (operator_at_half_dt * (k1 * 0.5 + state)) * dt;
+      const State k3 = (operator_at_half_dt * (k2 * 0.5 + state)) * dt;
+      const State k4 = (operator_at_dt * (state + k3)) * dt;
 
-      return state + (1.0 / 6.0) * k1 + (1.0 / 3.0) * k2 + (1.0 / 3.0) * k3 +
-             (1.0 / 6.0) * k4;
+      return state +  k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
+             k4 * (1.0 / 6.0);
     };
   }
 
   return [&liouville_operator, &potential](const State & state,
                                            const double dt) -> State {
-    const State k1 = dt * (liouville_operator * state);
-    const State k2 = dt * (liouville_operator * (0.5 * k1 + state));
-    const State k3 = dt * (liouville_operator * (0.5 * k2 + state));
-    const State k4 = dt * (liouville_operator * (state + k3));
+    const State k1 = (liouville_operator * state) * dt;
+    const State k2 = (liouville_operator * (k1 * 0.5 + state)) * dt;
+    const State k3 = (liouville_operator * (k1 * 0.5 + state)) * dt;
+    const State k4 = (liouville_operator * (state + k3)) * dt;
 
-    return state + (1.0 / 6.0) * k1 + (1.0 / 3.0) * k2 + (1.0 / 3.0) * k3 +
-           (1.0 / 6.0) * k4;
+    return state +  k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
+           k4 * (1.0 / 6.0);
   };
 }
 

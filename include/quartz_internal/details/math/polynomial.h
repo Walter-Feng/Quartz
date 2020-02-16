@@ -63,7 +63,7 @@ struct Term {
   inline
   Term<T> derivative(const arma::uword index) const {
     if (this->indices(index) == 0) {
-      return {0., arma::zeros<arma::Col<T>>(this->dim())};
+      return {0., arma::zeros<lvec>(this->dim())};
     } else {
       lvec new_indices = this->indices;
       new_indices(index) -= 1;

@@ -155,7 +155,7 @@ public:
   arma::cx_mat kinetic_energy_matrix() const {
     const long long narrowed_dim = arma::prod(this->grid);
 
-    arma::cx_mat result = arma::cx_mat(narrowed_dim, narrowed_dim);
+    arma::cx_mat result = arma::zeros<arma::cx_mat>(narrowed_dim, narrowed_dim);
 
     const arma::vec intervals = (this->ranges.col(1) - this->ranges.col(0))
                                 / (this->grid - arma::ones(this->grid.n_elem));
@@ -184,6 +184,7 @@ public:
   arma::cx_mat hamiltonian_matrix(const Potential & potential) const {
     const arma::vec potential_diag = at(potential, this->points);
 
+    this->kinetic_energy_matrix().print("kinetic energy");
     return this->kinetic_energy_matrix() + arma::diagmat(potential_diag);
   }
 
@@ -196,7 +197,7 @@ public:
       const cx_double dimension_result =
           arma::cdot(this->coefs,
                     this->positional_matrices.slice(i) * this->coefs);
-      assert(std::abs(dimension_result.imag()) < 1e-8);
+//      assert(std::abs(dimension_result.imag()) < 1e-8);
       result(i) = std::real(dimension_result);
     }
 

@@ -8,7 +8,7 @@ using namespace quartz::math;
 using namespace quartz::method;
 
 template<typename T>
-arma::cx_mat schrotinger_wrapper(const arma::Mat<T> & result,
+arma::cx_mat test_schrotinger_wrapper(const arma::Mat<T> & result,
                                  const double dt) {
   if (!result.is_square()) {
     throw Error("The matrix being wrapped for propagation is not square");
@@ -35,11 +35,10 @@ TEST_CASE("Schrotinger wrapper") {
       dvr::State(Gaussian(arma::mat{1.}, arma::vec{1}), arma::uvec{10},
                  arma::mat{{-5, 5}});
 
-  const arma::cx_mat wrapped = schrotinger_wrapper(symmetric, dt);
-
+  const arma::cx_mat wrapped = test_schrotinger_wrapper(symmetric, dt);
 
   const auto propagator =
-      schrotinger_wrapper<dvr::Operator, dvr::State, Polynomial<double>>(
+      math::schrotinger_wrapper<dvr::Operator, dvr::State, Polynomial<double>>(
           test, Polynomial<double>(1));
 
   CHECK(arma::approx_equal(propagator(random_state, dt).coefs,

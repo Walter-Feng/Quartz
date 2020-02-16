@@ -32,8 +32,8 @@ SECTION("Time Independent Version") {
 
   const auto propagator2 =
       runge_kutta_4<unit, arma::vec, dummy_potential>(const_operator,dummy);
-  
-  CHECK(arma::approx_equal(propagator2(state,0.1),state + 0.105170833333, "abs_diff", 1e-8));
+
+  CHECK(arma::approx_equal(propagator2(state,0.1),state + 0.1050833333, "abs_diff", 1e-8));
 }
 
 }

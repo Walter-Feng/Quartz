@@ -17,23 +17,25 @@ TEST_CASE("Check printer") {
       }
     } test;
 
-    generic_printer(test, 0.0, 1, true);
+    const auto printer = generic_printer<dummy_state>;
+
+    printer(test, 0.0, 1, true);
     for (int i = 0; i < 5; i++) {
-      generic_printer(test, 0.1 * (i + 1), 1);
+      printer(test, 0.1 * (i + 1), 1, false);
     }
 
     std::cout << std::endl;
 
-    generic_printer(test, 0, 2, true);
+    printer(test, 0, 2, true);
     for (int i = 0; i < 5; i++) {
-      generic_printer(test, 0.1 * (i + 1), 2);
+      printer(test, 0.1 * (i + 1), 2, false);
     }
 
     std::cout << std::endl;
 
-    generic_printer(test, 0, 3, true);
+    printer(test, 0, 3, true);
     for (int i = 0; i < 5; i++) {
-      generic_printer(test, 0.1 * (i + 1), 3);
+      printer(test, 0.1 * (i + 1), 3, false);
     }
     std::cout << std::endl;
   }
@@ -49,9 +51,11 @@ TEST_CASE("Check printer") {
       }
     } test;
 
-    generic_printer(test, 0, 1, true);
+    const auto printer = generic_printer<dummy_state>;
+
+    printer(test, 0, 1, true);
     for (int i = 0; i < 5; i++) {
-      generic_printer(test, 0.1 * (i + 1), 1);
+      printer(test, 0.1 * (i + 1), 1, false);
     }
   }
 
