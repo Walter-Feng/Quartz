@@ -69,6 +69,11 @@ propagate(const State initial_state,
       printer(state, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
+
+    std::cout << std::endl;
+    std::cout << "Quartz terminated normally." << std::endl;
+
+    return state;
   }
 
     // time independent, directly generate propagator
@@ -88,10 +93,13 @@ propagate(const State initial_state,
       state = propagator(state, dt);
       printer(state, i * dt, print_level, false);
     }
+
+    std::cout << std::endl;
+    std::cout << "Quartz terminated normally." << std::endl;
+
+    return state;
   }
 
-  std::cout << std::endl;
-  std::cout << "Quartz terminated normally." << std::endl;
 }
 
 

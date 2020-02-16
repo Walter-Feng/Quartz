@@ -6,6 +6,8 @@ namespace quartz {
 
 TEST_CASE("Check printer") {
 
+  std::cout << "Test printer ... " << std::endl << std::endl;
+
   SECTION("One Dimension") {
     struct dummy_state {
       arma::vec positional_expectation() const {

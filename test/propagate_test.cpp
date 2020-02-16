@@ -5,13 +5,16 @@
 namespace quartz {
 
 TEST_CASE("Propagate") {
+
+  std::cout << std::endl << std::endl;
+  std::cout << "testing propagate function ..." << std::endl << std::endl;
   SECTION("Schrotinger") {
 
     const double dt = 0.01;
 
     const method::dvr::State initial_state =
         method::dvr::State(math::Gaussian(arma::mat{1.}, arma::vec{1}),
-                           arma::uvec{10},
+                           arma::uvec{100},
                            arma::mat{{-5, 5}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
@@ -28,7 +31,7 @@ TEST_CASE("Propagate") {
               op,
               wrapper,
               harmonic_potential,
-              generic_printer<method::dvr::State>, 3, dt);
+              generic_printer<method::dvr::State>, 500, dt);
 
 
   }
