@@ -50,15 +50,15 @@ propagate(const State initial_state,
           const double dt,
           const int print_level = 1) {
 
+  std::cout << "Library: Quartz" << std::endl;
+  std::cout << "version: " + version << std::endl << std::endl;
+
   //time dependent version, need to constantly update the propagator
   if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
 
     Potential updated_potential = potential;
 
     //print out initial state & header
-
-    std::cout << "Library: Quartz" << std::endl;
-    std::cout << "version: " + version << std::endl;
 
     printer(initial_state, 0.0, print_level, true);
 
@@ -79,9 +79,6 @@ propagate(const State initial_state,
     // time independent, directly generate propagator
   else {
     //print out initial state & header
-
-    std::cout << "Library: Quartz" << std::endl;
-    std::cout << "ver.   : -0.0.1" << std::endl;
 
     printer(initial_state, 0.0, print_level, true);
 
