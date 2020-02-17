@@ -18,14 +18,14 @@ TEST_CASE("Propagate") {
                            arma::mat{{-5, 5}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
-                                                             lmat{2});
+                                                             lmat{1});
 
     const auto op = method::dvr::Operator(initial_state, harmonic_potential);
 
     const auto wrapper =
         math::schrotinger_wrapper<method::dvr::Operator,
-            method::dvr::State,
-            math::Polynomial<double>>;
+                                  method::dvr::State,
+                                  math::Polynomial<double>>;
 
     const auto result = propagate(initial_state,
                                   op,
