@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.7)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 set(PROJECT_VERSION 0.0.1)
 
 project(Quartz VERSION ${PROJECT_VERSION}
