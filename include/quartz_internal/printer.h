@@ -5,15 +5,17 @@
 
 template<typename State>
 using Printer = std::function<void(const State & state,
+                                   const arma::uword index,
                                    const double time,
                                    const int print_level,
                                    const bool print_header)>;
 
 template<typename State>
 Printer<State> generic_printer = [](const State & state,
+                                    const arma::uword index,
                                     const double time,
                                     const int print_level = 1,
-                                    const bool print_header = 1) -> void {
+                                    const bool print_header = false) -> void {
 
   static_assert(has_positional_expectation<State, arma::vec(void)>::value,
                 "The state does not support exporting positional expectation values, "
@@ -81,12 +83,13 @@ Printer<State> generic_printer = [](const State & state,
 
 
 template<typename State>
-void mute(const State & state,
-          const double time,
-          const int print_level = 0,
-          const bool print_header = false) {
+Printer<State> mute = [](const State &,
+                         const arma::uword,
+                         const double,
+                         const int,
+                         const bool) -> void {
 
-}
+};
 
 
 #endif //QUARTZ_PRINTER_H

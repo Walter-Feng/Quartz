@@ -93,7 +93,7 @@ target_link_libraries(test_core catch2 quartz)
 add_test(NAME UNITTEST_core
         COMMAND bin/test_math)
 
-add_executable(test_math
+add_executable(test_mathematics
         test/details/math/exponential_test.cpp
         test/details/math/polynomial_test.cpp
         test/details/math/gaussian_test.cpp
@@ -101,7 +101,7 @@ add_executable(test_math
         test/details/math/schrotinger_wrapper_test.cpp
         )
 
-target_link_libraries(test_math catch2 quartz)
+target_link_libraries(test_mathematics catch2 quartz)
 
 add_executable(test_utils
         test/utils/check_member_test.cpp)
