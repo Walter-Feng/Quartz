@@ -60,13 +60,13 @@ propagate(const State initial_state,
 
     //print out initial state & header
 
-    printer(initial_state, 0.0, print_level, true);
+    printer(initial_state, 0, 0.0, print_level, true);
 
     State state = initial_state;
 
     for (arma::uword i = 1; i <= steps; i++) {
       state = std::move(propagator(state, dt));
-      printer(state, i * dt, print_level, false);
+      printer(state, i, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
 
@@ -80,7 +80,7 @@ propagate(const State initial_state,
   else {
     //print out initial state & header
 
-    printer(initial_state, 0.0, print_level, true);
+    printer(initial_state, 0, 0.0, print_level, true);
 
     State state = initial_state;
     const Propagator<State> propagator =
@@ -88,7 +88,7 @@ propagate(const State initial_state,
 
     for(arma::uword i = 1; i <= steps; i++) {
       state = propagator(state, dt);
-      printer(state, i * dt, print_level, false);
+      printer(state, i, i * dt, print_level, false);
     }
 
     std::cout << std::endl;

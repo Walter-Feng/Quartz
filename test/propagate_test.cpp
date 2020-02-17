@@ -18,7 +18,7 @@ TEST_CASE("Propagate") {
                            arma::mat{{-5, 5}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
-                                                             lmat{1});
+                                                             lmat{2});
 
     const auto op = method::dvr::Operator(initial_state, harmonic_potential);
 
