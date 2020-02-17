@@ -19,11 +19,11 @@ Printer<State> generic_printer = [](const State & state,
                 "The state does not support exporting positional expectation values, "
                 "therefore not support generic printers");
 
-  int width = 14;
+  int width = 18;
   int precision = 8;
 
   if (print_level > 2) {
-    width = 23;
+    width = 27;
     precision = 17;
   }
 

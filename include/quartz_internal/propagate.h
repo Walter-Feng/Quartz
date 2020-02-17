@@ -58,7 +58,7 @@ propagate(const State initial_state,
     //print out initial state & header
 
     std::cout << "Library: Quartz" << std::endl;
-    std::cout << "ver.   : -0.0.1" << std::endl;
+    std::cout << "version: " + version << std::endl;
 
     printer(initial_state, 0.0, print_level, true);
 

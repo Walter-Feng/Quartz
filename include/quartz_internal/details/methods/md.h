@@ -55,7 +55,7 @@ public:
         const arma::mat & range) :
       points(math::space::points_generate(grid, range)),
       weights(arma::real(at(initial, points))),
-      masses(arma::ones<arma::vec>(arma::prod(grid))) {
+      masses(arma::ones<arma::vec>(grid.n_elem / 2)) {
     if (grid.n_elem % 2 != 0) {
       throw Error("Odd number of dimension - it is not likely a phase space");
     }

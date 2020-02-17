@@ -7,7 +7,12 @@
 #include <iomanip>
 #include <omp.h>
 
+
+
 namespace quartz {
+
+const std::string version = "0.0.1";
+
 // Global
 #include "quartz_internal/alias.h"
 #include "quartz_internal/error.h"
