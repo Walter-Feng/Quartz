@@ -34,14 +34,14 @@ const OperatorWrapper<Operator, State, Potential>
                                                   potential_at_half_dt);
 
     const Operator lhs =
-        Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
-        + 0.5 * dt * cx_double{0.0, 1.0} * operator_at_half_dt;
+        (Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
+        + 0.5 * dt * cx_double{0.0, 1.0})(operator_at_half_dt);
 
     const Operator rhs =
-        Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
-        - 0.5 * dt * cx_double{0.0, 1.0} * operator_at_half_dt;
+        (Operator(arma::eye(arma::size(operator_matrix.hamiltonian)))
+        - 0.5 * dt * cx_double{0.0, 1.0})(operator_at_half_dt);
 
-    return (lhs.inv() * rhs) * state;
+    return (lhs.inv() * rhs)(state);
   };
 }
   else {
@@ -59,7 +59,7 @@ const OperatorWrapper<Operator, State, Potential>
           Operator(unit_matrix) -
           operator_matrix * (0.5 * dt * cx_double{0.0, 1.0});
 
-      return (lhs.inv() * rhs) * state;
+      return (lhs.inv() * rhs)(state);
     };
   }
 };

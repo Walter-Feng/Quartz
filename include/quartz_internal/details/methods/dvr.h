@@ -251,7 +251,7 @@ public:
     return Schrotinger;
   }
 
-  State operator*(State state) const {
+  State operator()(State state) const {
     state.coefs = this->hamiltonian * state.coefs;
     return state;
   }

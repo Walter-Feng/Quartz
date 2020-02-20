@@ -104,7 +104,8 @@ add_executable(test_mathematics
 target_link_libraries(test_mathematics catch2 quartz)
 
 add_executable(test_utils
-        test/utils/check_member_test.cpp)
+        test/utils/check_member_test.cpp
+        test/utils/elementary_function_operator.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
 

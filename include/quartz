@@ -11,6 +11,9 @@
 
 namespace quartz {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 const std::string version = "0.0.1";
 
 // Global
@@ -39,6 +42,9 @@ const std::string version = "0.0.1";
 #include "quartz_internal/util/check_member.h"
 #include "quartz_internal/util/type_converter.h"
 #include "quartz_internal/util/member_function_wrapper.h"
+#include "quartz_internal/util/elementary_function_operator.h"
+
+#pragma GCC diagnostic pop
 
 }
 

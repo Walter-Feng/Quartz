@@ -148,7 +148,7 @@ public:
     return Classic;
   }
 
-  State operator*(const State & state) const {
+  State operator()(const State & state) const {
 
     arma::mat p_submatrix = state.points.rows(state.dim(), 2 * state.dim() - 1);
     p_submatrix.each_col() /= state.masses;

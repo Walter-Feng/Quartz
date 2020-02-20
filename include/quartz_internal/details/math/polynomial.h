@@ -225,15 +225,15 @@ public:
     auto result =
         Polynomial<std::common_type_t<T, U>>(dim);
 
-    const std::function<arma::uword(arma::uword)>
-        factorial = [&factorial](const arma::uword n) -> arma::uword {
+    const std::function<double(double)>
+        factorial = [&factorial](const double n) -> double {
       if (n == 0) return 1;
       else if (n == 1) return n;
-      else return factorial(n - 1);
+      else return n * factorial(n - 1);
     };
 
     const auto binomial =
-        [&factorial](const arma::uword n, const arma::uword i) -> arma::uword {
+        [&factorial](const double n, const double i) -> double {
           return factorial(n) / factorial(i) / factorial(n - i);
         };
 
