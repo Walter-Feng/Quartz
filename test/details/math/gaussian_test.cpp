@@ -55,6 +55,14 @@ TEST_CASE("Gaussian Value") {
       CHECK(std::real(gaussian3.at(arma::vec{grid(i)})) ==
             2.0 * std::exp(-0.5 * grid(i) * grid(i) + 2. * grid(i)));
     }
+
+    const arma::mat covariance = arma::mat{{1,0.1},{0.1,1}};
+    const arma::vec mean = arma::vec{1,2};
+    const Gaussian gaussian_from_mean_and_covariance =
+        Gaussian(arma::inv(covariance),arma::inv(covariance) * mean);
+
+    CHECK(arma::approx_equal(covariance,gaussian_from_mean_and_covariance.covariance(),"abs_diff",1e-16));
+    CHECK(arma::approx_equal(mean,arma::real(gaussian_from_mean_and_covariance.mean()),"abs_diff",1e-16));
   }
 }
 

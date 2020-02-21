@@ -41,7 +41,7 @@ template<typename State,
     typename Potential,
     typename Operator>
 State
-propagate(const State initial_state,
+propagate(const State & initial_state,
           const Operator & op,
           const OperatorWrapper<Operator, State, Potential> & operator_wrapper,
           const Potential & potential,

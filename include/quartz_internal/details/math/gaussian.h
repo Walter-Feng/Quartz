@@ -297,6 +297,19 @@ struct Gaussian {
   }
 
   inline
+  arma::cx_vec mean() const {
+    const arma::cx_vec new_monomial =
+        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
+
+    return arma::inv(this->binomial) * new_monomial;
+  }
+
+  inline
+  arma::mat covariance() const {
+    return arma::inv(this->binomial);
+  }
+
+  inline
   Gaussian conj() const {
     return Gaussian(this->binomial, this->monomial, this->phase.conj(),
                     std::conj(this->coef));

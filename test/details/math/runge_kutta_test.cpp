@@ -15,7 +15,7 @@ SECTION("Time Independent Version") {
       return Classic;
     }
 
-    arma::vec operator*(const arma::vec & B) const {
+    arma::vec operator()(const arma::vec & B) const {
       return this->core * B;
     }
   } const_operator;
