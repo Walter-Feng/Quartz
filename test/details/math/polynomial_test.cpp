@@ -186,4 +186,14 @@ TEST_CASE("Operators") {
   }
 }
 
+TEST_CASE("Member Functions") {
+  SECTION("Grades") {
+    const Polynomial<double> squared = Polynomial<double>(arma::vec{0.5},
+                                                          lmat{{{2}}});
+
+    CHECK(squared.grade() == 2);
+  }
+}
+
+
 }

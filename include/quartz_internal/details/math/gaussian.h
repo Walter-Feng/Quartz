@@ -4,6 +4,8 @@
 #include "polynomial.h"
 #include "exponential.h"
 
+#include "quartz_internal/util/elementary_function_operator.h"
+
 namespace math {
 namespace gaussian {
 
@@ -295,6 +297,45 @@ struct Gaussian {
            * std::exp(0.5 * arma::dot(new_monomial, arma::inv(this->binomial) *
                                                     new_monomial));
   }
+
+  template<typename T>
+  cx_double integral(const Polynomial<T> & polynomial) const {
+
+    if (polynomial.dim() != this->dim()) {
+      throw Error(
+          "Different dimension between the gaussian term and polynomial term");
+    }
+
+    const arma::cx_vec new_monomial =
+        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
+
+    const arma::mat inv_binomial = arma::inv(this->binomial);
+
+    const auto functor = [&inv_binomial](
+        const Polynomial<T> & poly) -> Polynomial<T> {
+      Polynomial<T> result = Polynomial<T>(poly.dim());
+
+      for (arma::uword i = 0; i < poly.dim(); i++) {
+        for (arma::uword j = 0; j < poly.dim(); j++) {
+          result = result + poly.derivative(i).derivative(j) * 0.5 * inv_binomial(i,j);
+        }
+      }
+
+      return result;
+    };
+
+    const auto post_functor = [&new_monomial](const Polynomial<T> & poly) {
+
+      return poly.at(new_monomial);
+    };
+    const cx_double polynomial_part = exp(functor, post_functor, polynomial, polynomial.grade() / 2);
+
+    return this->coef *
+           std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
+           * std::exp(0.5 * arma::dot(new_monomial, arma::inv(this->binomial) *
+                                                    new_monomial)) * polynomial_part;
+  }
+
 
   inline
   arma::cx_vec mean() const {

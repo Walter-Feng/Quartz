@@ -2,9 +2,10 @@
 #define MATH_POLYNOMIAL_H
 
 #include "alias.h"
+#include "trivial.h"
 #include "quartz_internal/error.h"
 
-#include "util/type_converter.h"
+#include "quartz_internal/util/type_converter.h"
 
 namespace math {
 namespace polynomial {
@@ -26,6 +27,9 @@ struct Term {
     auto result = std::common_type_t<T, U>(1.0);
 
     for (arma::uword i = 0; i < position.n_elem; i++) {
+      if(this->indices(i) == 0)
+        continue;
+
       result *= std::pow(position(i), this->indices(i));
     }
 
@@ -63,7 +67,7 @@ struct Term {
   inline
   Term<T> derivative(const arma::uword index) const {
     if (this->indices(index) == 0) {
-      return {0., arma::zeros<lvec>(this->dim())};
+      return {T{0.}, arma::zeros<lvec>(this->dim())};
     } else {
       lvec new_indices = this->indices;
       new_indices(index) -= 1;
@@ -150,6 +154,11 @@ public:
     return this->indices.n_rows;
   }
 
+  inline
+  long long grade() const {
+    return arma::max(arma::sum(this->indices));
+  }
+
   template<typename U>
   std::common_type_t<T, U> at(const arma::Col<U> & position) const {
 
@@ -225,16 +234,9 @@ public:
     auto result =
         Polynomial<std::common_type_t<T, U>>(dim);
 
-    const std::function<double(double)>
-        factorial = [&factorial](const double n) -> double {
-      if (n == 0) return 1;
-      else if (n == 1) return n;
-      else return n * factorial(n - 1);
-    };
-
     const auto binomial =
-        [&factorial](const double n, const double i) -> double {
-          return factorial(n) / factorial(i) / factorial(n - i);
+        [](const double n, const double i) -> double {
+          return math::factorial(n) / factorial(i) / factorial(n - i);
         };
 
     const auto term_displace =

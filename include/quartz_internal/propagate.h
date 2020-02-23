@@ -3,7 +3,7 @@
 
 #include "printer.h"
 
-#include "util/check_member.h"
+#include "quartz_internal/util/check_member.h"
 
 
 enum PropagationType {

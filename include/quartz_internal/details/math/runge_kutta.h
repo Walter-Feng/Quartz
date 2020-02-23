@@ -3,7 +3,7 @@
 
 #include "quartz_internal/propagate.h"
 #include "quartz_internal/error.h"
-#include "util/check_member.h"
+#include "quartz_internal/util/check_member.h"
 
 namespace math {
 

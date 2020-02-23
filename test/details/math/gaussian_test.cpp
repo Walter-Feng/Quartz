@@ -74,6 +74,24 @@ TEST_CASE("Gaussian Integral") {
   CHECK(
       std::abs((test * test).integral() - wigner_transform.integral()) < 1e-14);
 
+  const Polynomial<double> polynomial_const = Polynomial<double>(1,1.0);
+  CHECK(test.integral(polynomial_const) == test.integral());
+
+  const Polynomial<double> polynomial_null = Polynomial<double>(1);
+  CHECK(test.integral(polynomial_null) == 0.);
+
+  const Polynomial<double> polynomial_1 = Polynomial<double>(arma::vec{1.0},lvec{1});
+  CHECK(test.integral(polynomial_1) == 0.);
+
+  const Polynomial<double> polynomial_1_with_const =
+      Polynomial<double>(arma::vec{1.0,1.0},lmat{{1,0}});
+  CHECK(test.integral(polynomial_1_with_const) == test.integral());
+
+  const Polynomial<double> polynomial_4 =
+      Polynomial<double>(arma::vec{1.0,4.0},lmat{{1,0}});
+
+  CHECK(std::abs(test.integral(polynomial_4) - cx_double{10.026513098524,0.0}) < 1e-14);
+
   const Gaussian test_2 = Gaussian(arma::mat{2});
   const Gaussian wigner_transform_2 = test_2.wigner_transform();
 
