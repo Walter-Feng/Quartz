@@ -25,4 +25,22 @@ auto at(const Function & function, const arma::Mat<T> & positions) {
   return result;
 }
 
+template<typename Function>
+auto derivative(const Function & function, const arma::uword index) {
+  return function.derivative(index);
+}
+
+template<typename Function>
+auto derivative(const Function & function, const arma::uvec index) {
+
+  Function result = function;
+
+  for (arma::uword i = 0; i < index.n_elem; i++) {
+    for (arma::uword j = 0; j < index(i); j++) {
+      result = result.derivative(j);
+    }
+  }
+}
+
+
 #endif //UTIL_MEMBER_FUNCTION_WRAPPER_H

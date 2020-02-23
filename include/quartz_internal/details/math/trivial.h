@@ -5,9 +5,7 @@ namespace math {
 
 inline
 double factorial(const double n) {
-  if (n == 0) return 1;
-  else if (n == 1) return n;
-  else return n * factorial(n - 1);
+  return std::tgamma(n + 1);
 }
 
 }
