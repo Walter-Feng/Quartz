@@ -131,7 +131,7 @@ struct Gaussian {
   }
 
   inline
-  Gaussian<double> wigner_transform() const {
+  Gaussian<T> wigner_transform() const {
     arma::vec eigenvalues;
     arma::mat eigenvectors;
 
@@ -154,8 +154,9 @@ struct Gaussian {
                         arma::join_rows(zero_matrix,
                                         momentum_space_binomial_part));
 
-    const arma::mat new_monomial = arma::join_cols(real_space_monomial_part,
-                                                   momentum_space_monomial_part);
+    const auto new_monomial =
+        arma::conv_to<arma::Col<T>>::from(arma::join_cols(real_space_monomial_part,
+                                                     momentum_space_monomial_part));
 
     const double constant_part =
         1. / std::sqrt(arma::prod(eigenvalues)) *
@@ -164,8 +165,7 @@ struct Gaussian {
                       momentum_space_binomial_part *
                       arma::imag(this->monomial)));
 
-    return Gaussian<double>(new_binomial, new_monomial,
-                            this->coef * constant_part);
+    return Gaussian<T>(new_binomial, new_monomial, this->coef * constant_part);
   }
 
   template<typename U>
