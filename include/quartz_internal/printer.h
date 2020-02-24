@@ -1,7 +1,53 @@
 #ifndef QUARTZ_PRINTER_H
 #define QUARTZ_PRINTER_H
 
+#include <fmt/core.h>
+
 #include "util/check_member.h"
+
+template<typename T>
+auto print(const T number,
+           const int width,
+           const int precision = 6) {
+  return fmt::print("{0:" + std::to_string(width) + "." + std::to_string(precision) + "f}", number);
+
+
+template<>
+inline
+auto print(const std::string & line,
+           const int width,
+           const int precision) {
+  return fmt::print("{0:" + std::to_string(width) + "s}", line);
+}
+
+template<typename T>
+auto print(const arma::Mat<T> & arma,
+           const int width,
+           const int precision) {
+  for (arma::uword i = 0; i < arma.n_rows; i++) {
+    for (arma::uword j = 0; j < arma.n_cols; j++) {
+      print(arma(i, j), width, precision);
+    }
+  }
+}
+
+template<typename T>
+auto print(const T number) {
+  return fmt::print("{}", number);
+}
+
+template<>
+inline
+auto print(const int number) {
+  return fmt::print("{}", number);
+}
+
+template<>
+inline
+auto print(const std::string & line) {
+  return fmt::print("{}", line);
+}
+
 
 template<typename State>
 using Printer = std::function<void(const State & state,
@@ -32,20 +78,22 @@ Printer<State> generic_printer = [](const State & state,
   if (print_level == 1) {
     const arma::vec real_space_expectation = state.positional_expectation();
     if (print_header) {
-      std::cout << std::setw(6) << "Step |";
-      std::cout << std::setw(width) << "Time |";
-      std::cout << std::setw(width * real_space_expectation.n_elem)
-                << "Positional |" << std::endl;
+      print("Step |", 6);
+      print("Time |", width);
+      print("Positional |\n", width * real_space_expectation.n_elem);
       for (arma::uword i = 0;
            i < 6 + width * (real_space_expectation.n_elem + 1); i++) {
-        std::cout << "=";
+        print("=");
       }
-      std::cout << std::endl;
+      print("\n");
     }
 
     std::cout << std::setw(6) << index;
     std::cout << std::setw(width) << std::setprecision(precision);
 
+//    print(arma::mat(arma::join_rows(arma::vec{time}, real_space_expectation.t())),
+//          width,
+//          precision);
     arma::join_rows(arma::vec{time}, real_space_expectation.t()).raw_print(
         std::cout);
   }
@@ -67,8 +115,9 @@ Printer<State> generic_printer = [](const State & state,
       std::cout << std::setw(width * momentum_expectation.n_elem)
                 << "Momentum |";
       std::cout << std::endl;
-      for (arma::uword i = 0; i < 6 + width * (real_space_expectation.n_elem + 1) +
-                                  width * momentum_expectation.n_elem; i++) {
+      for (arma::uword i = 0;
+           i < 6 + width * (real_space_expectation.n_elem + 1) +
+               width * momentum_expectation.n_elem; i++) {
         std::cout << "=";
       }
       std::cout << std::endl;
