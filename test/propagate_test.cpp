@@ -13,7 +13,7 @@ TEST_CASE("Propagate") {
     const double dt = 0.01;
 
     const method::dvr::State initial_state =
-        method::dvr::State(math::Gaussian(arma::mat{1.}, arma::vec{1}),
+        method::dvr::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}),
                            arma::uvec{100},
                            arma::mat{{-5, 5}});
 
@@ -42,7 +42,7 @@ TEST_CASE("Propagate") {
     const double dt = 0.01;
 
     const method::md::State initial_state =
-        method::md::State(math::Gaussian(arma::mat{1.}, arma::vec{1}).wigner_transform(),
+        method::md::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
                           arma::uvec{30,30},
                           arma::mat{{-5, 5},{-5,5}});
 

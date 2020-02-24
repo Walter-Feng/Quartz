@@ -102,7 +102,7 @@ public:
         const arma::mat & range,
         const arma::vec & masses) :
       points(math::space::points_generate(grid, range)),
-      coefs(at(initial, points)),
+      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
       grid(grid),
       ranges(range),
       masses(masses),
@@ -122,7 +122,7 @@ public:
         const arma::uvec & grid,
         const arma::mat & range) :
       points(math::space::points_generate(grid, range)),
-      coefs(at(initial, points)),
+      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
       grid(grid),
       ranges(range),
       masses(arma::ones<arma::vec>(arma::prod(grid))),

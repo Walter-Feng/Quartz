@@ -8,38 +8,35 @@
 
 namespace math {
 
+template<typename T>
 struct Gaussian {
-  cx_double coef;
+  T coef;
   arma::mat binomial;
-  arma::vec monomial;
-  exponential::Phase phase;
+  arma::Col<T> monomial;
 
   inline
-  Gaussian(const arma::uword dim, const cx_double coef = 0.0) :
+  Gaussian(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
       binomial(arma::zeros<arma::mat>(dim, dim)),
-      monomial(arma::zeros<arma::vec>(dim, dim)),
-      phase(exponential::Phase(dim)) {}
+      monomial(arma::zeros<arma::vec>(dim, dim)) {}
 
 
   inline
-  Gaussian(const arma::mat & binomial, const cx_double coef = 1.0) :
-      coef(1.0),
+  Gaussian(const arma::mat & binomial) :
+      coef(T{1.0}),
       binomial(binomial),
-      monomial(arma::zeros<arma::vec>(binomial.n_rows, binomial.n_rows)),
-      phase(exponential::Phase(binomial.n_rows)) {
+      monomial(arma::zeros<arma::vec>(binomial.n_rows, binomial.n_rows)) {
     if (!binomial.is_symmetric()) {
       throw Error("The binomial term is not symmetric");
     }
   }
 
   inline
-  Gaussian(const arma::mat & binomial, const arma::vec & monomial,
-           const cx_double coef = 1.0) :
+  Gaussian(const arma::mat & binomial, const arma::Col<T> & monomial,
+           const T coef = T{1.0}) :
       coef(coef),
       binomial(binomial),
-      monomial(monomial),
-      phase(exponential::Phase(binomial.n_rows)) {
+      monomial(monomial) {
     if (binomial.n_rows != monomial.n_elem) {
       throw Error("Different dimension between the binomial and monomial term");
     }
@@ -48,63 +45,41 @@ struct Gaussian {
     }
   }
 
-  inline
-  Gaussian(const arma::mat & binomial, const arma::vec & monomial,
-           const exponential::Phase & phase,
-           const cx_double coef = 1.0) :
-      coef(coef),
-      binomial(binomial),
-      monomial(monomial),
-      phase(phase) {
-    if (binomial.n_rows != monomial.n_elem) {
-      throw Error("Different dimension between the binomial and monomial term");
-    }
-
-    if (binomial.n_rows != phase.wavenumbers.n_elem) {
-      throw Error("Different dimension between the binomial and phase factor");
-    }
-    if (!binomial.is_symmetric()) {
-      throw Error("The binomial term is not symmetric");
-    }
-  }
 
   inline
   arma::uword dim() const {
     return this->binomial.n_rows;
   }
 
-  arma::cx_double at(const arma::vec & position) const {
+  template<typename U>
+  std::common_type_t<T, U> at(const arma::Col<U> & position) const {
     if (position.n_elem != this->dim()) {
       throw Error("Different dimension between the gaussian term and position");
     }
 
     return this->coef * std::exp(
-        -0.5 * arma::cdot(position, this->binomial * position) +
-        arma::cdot(position, this->monomial)) * this->phase.at(position);
+        -0.5 * arma::dot(position, this->binomial * position) +
+        arma::dot(position, this->monomial));
   }
 
   inline
-  cx_double integral() const {
-
-    const arma::cx_vec new_monomial =
-        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
+  T integral() const {
 
     return this->coef *
            std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
-           * std::exp(0.5 * arma::dot(new_monomial, arma::inv(this->binomial) *
-                                                    new_monomial));
+           *
+           std::exp(0.5 * arma::dot(this->monomial, arma::inv(this->binomial) *
+                                                    this->monomial));
   }
 
-  template<typename T>
-  cx_double integral(const Polynomial<T> & polynomial) const {
+  template<typename U>
+  std::common_type_t<T, U> integral(const Polynomial<U> & polynomial) const {
 
     if (polynomial.dim() != this->dim()) {
       throw Error(
           "Different dimension between the gaussian term and polynomial term");
     }
 
-    const arma::cx_vec new_monomial =
-        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
 
     const arma::mat inv_binomial = arma::inv(this->binomial);
 
@@ -114,32 +89,35 @@ struct Gaussian {
 
       for (arma::uword i = 0; i < poly.dim(); i++) {
         for (arma::uword j = 0; j < poly.dim(); j++) {
-          result = result + poly.derivative(i).derivative(j) * 0.5 * inv_binomial(i,j);
+          result = result +
+                   poly.derivative(i).derivative(j) * 0.5 * inv_binomial(i, j);
         }
       }
 
       return result;
     };
 
-    const auto post_functor = [&new_monomial](const Polynomial<T> & poly) {
+    const auto post_functor = [this](const Polynomial<T> & poly) {
 
-      return poly.at(new_monomial);
+      return poly.at(this->monomial);
     };
-    const cx_double polynomial_part = exp(functor, post_functor, polynomial, polynomial.grade() / 2);
+    const std::common_type_t<T, U> polynomial_part = exp(functor, post_functor,
+                                                         polynomial,
+                                                         polynomial.grade() /
+                                                         2);
 
     return this->coef *
            std::sqrt(std::pow(2 * pi, this->dim()) / arma::det(this->binomial))
-           * std::exp(0.5 * arma::dot(new_monomial, arma::inv(this->binomial) *
-                                                    new_monomial)) * polynomial_part;
+           *
+           std::exp(0.5 * arma::dot(this->monomial, arma::inv(this->binomial) *
+                                                    this->monomial)) *
+           polynomial_part;
   }
 
 
   inline
-  arma::cx_vec mean() const {
-    const arma::cx_vec new_monomial =
-        this->monomial + cx_double{0.0, 1.0} * this->phase.wavenumbers;
-
-    return arma::inv(this->binomial) * new_monomial;
+  arma::Col<T> mean() const {
+    return arma::inv(this->binomial) * this->monomial;
   }
 
   inline
@@ -148,13 +126,12 @@ struct Gaussian {
   }
 
   inline
-  Gaussian conj() const {
-    return Gaussian(this->binomial, this->monomial, this->phase.conj(),
-                    std::conj(this->coef));
+  arma::vec variance() const {
+    return this->covariance().diag();
   }
 
   inline
-  Gaussian wigner_transform() const {
+  Gaussian<double> wigner_transform() const {
     arma::vec eigenvalues;
     arma::mat eigenvectors;
 
@@ -166,11 +143,11 @@ struct Gaussian {
     const arma::mat zero_matrix = arma::zeros<arma::mat>(
         arma::size(this->binomial));
     const arma::mat real_space_binomial_part = 2 * this->binomial;
-    const arma::vec real_space_monomial_part = 2 * this->monomial;
+    const arma::vec real_space_monomial_part = 2 * arma::real(this->monomial);
     const arma::mat momentum_space_binomial_part =
         2 * eigenvectors * transformed_binomial * eigenvectors.t();
     const arma::mat momentum_space_monomial_part =
-        momentum_space_binomial_part * this->phase.wavenumbers;
+        momentum_space_binomial_part * arma::imag(this->monomial);
 
     const arma::mat new_binomial =
         arma::join_cols(arma::join_rows(real_space_binomial_part, zero_matrix),
@@ -183,55 +160,56 @@ struct Gaussian {
     const double constant_part =
         1. / std::sqrt(arma::prod(eigenvalues)) *
         std::pow(1.0 / pi, this->dim() / 2.0) / std::exp(
-            arma::dot(this->phase.wavenumbers,
-                      momentum_space_binomial_part * this->phase.wavenumbers));
+            arma::dot(arma::imag(this->monomial),
+                      momentum_space_binomial_part *
+                      arma::imag(this->monomial)));
 
-    return Gaussian(new_binomial, new_monomial, this->coef * constant_part);
+    return Gaussian<double>(new_binomial, new_monomial,
+                            this->coef * constant_part);
   }
 
-  Gaussian operator*(const cx_double B) const {
-    return Gaussian(this->binomial, this->monomial, this->phase,
-                    this->coef * B);
+  template<typename U>
+  Gaussian<std::common_type_t<T, U>> operator*(const U B) const {
+    return Gaussian<std::common_type_t<T, U>>(this->binomial, this->monomial,
+                                              this->coef * B);
   }
 
-  Gaussian operator*(const exponential::Term<double> & B) const {
-    return Gaussian(this->binomial, this->monomial + B.wavenumbers, this->phase,
-                    this->coef * B.coef);
+  template<typename U>
+  Gaussian<std::common_type_t<T, U>>
+  operator*(const exponential::Term<U> & B) const {
+    return Gaussian<std::common_type_t<T, U>>(this->binomial,
+                                              this->monomial + B.wavenumbers,
+                                              this->coef * B.coef);
   }
 
-  Gaussian operator*(const exponential::Term<cx_double> & B) const {
-    return Gaussian(this->binomial, this->monomial + arma::real(B.wavenumbers),
-                    this->phase * exponential::Phase(arma::imag(B.wavenumbers)),
-                    this->coef * B.coef);
-  }
-
-  Gaussian operator*(const Gaussian & B) const {
-    return Gaussian(this->binomial + B.binomial, this->monomial + B.monomial,
-                    this->phase * B.phase, this->coef * B.coef);
+  template<typename U>
+  Gaussian<std::common_type_t<T, U>>
+  operator*(const Gaussian<U> & B) const {
+    return Gaussian<std::common_type_t<T, U>>(this->binomial + B.binomial,
+                                              this->monomial + B.monomial,
+                                              this->coef * B.coef);
   }
 
 };
-
-namespace gaussian {
 
 // G(X) = Coef * exp(-1/2 X^T A X + B^T X)
 template<typename T>
 struct GaussianWithPoly {
   Polynomial<T> polynomial;
-  Gaussian gaussian;
+  Gaussian<T> gaussian;
 
   explicit
   inline
   GaussianWithPoly(const arma::uword dim, const T coef = 0.0) :
       polynomial(Polynomial<T>(dim, coef)),
-      gaussian(Gaussian(dim, 1.0)) {}
+      gaussian(Gaussian<T>(dim, 1.0)) {}
 
   inline
   GaussianWithPoly(const Polynomial<T> polynomial,
-       const arma::mat & binomial,
-       const arma::Col<T> & monomial) :
+                   const arma::mat & binomial,
+                   const arma::Col<T> & monomial) :
       polynomial(polynomial),
-      gaussian(Gaussian(binomial,monomial,1.0)){
+      gaussian(Gaussian<T>(binomial, monomial, 1.0)) {
     if (!binomial.is_square()) {
       throw Error("The binomial terms provided is not square");
     }
@@ -248,10 +226,10 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly(const arma::mat & binomial,
-       const arma::Col<T> & monomial,
-       const T coef = 1.0) :
+                   const arma::Col<T> & monomial,
+                   const T coef = 1.0) :
       polynomial(Polynomial<T>(binomial.n_rows, coef)),
-      gaussian(binomial,monomial,1.0) {
+      gaussian(binomial, monomial, 1.0) {
     if (!binomial.is_symmetric()) {
       throw Error("The binomial terms provided is not symmetric");
     }
@@ -265,8 +243,16 @@ struct GaussianWithPoly {
   explicit
   inline
   GaussianWithPoly(const arma::mat & binomial, const T coef = 1.0) :
-      polynomial(Polynomial<T>(dim, coef)),
-      gaussian(Gaussian(binomial,1.0)) {}
+      polynomial(Polynomial<T>(binomial.n_cols, coef)),
+      gaussian(Gaussian<T>(binomial, 1.0)) {}
+
+  explicit
+  inline
+  GaussianWithPoly(const Gaussian<T> & gaussian) :
+      polynomial(Polynomial<T>(gaussian.dim(), gaussian.coef)),
+      gaussian(gaussian) {
+    this->gaussian.coef = 1.0;
+  }
 
   inline
   arma::uword dim() const {
@@ -328,12 +314,14 @@ struct GaussianWithPoly {
 
   template<typename U>
   GaussianWithPoly<std::common_type_t<T, U>>
-  operator*(const GaussianWithPoly<T> & B) const {
+  operator*(const GaussianWithPoly<U> & B) const {
     if (this->dim() != B.dim()) {
       throw Error("Different dimension between multiplied gaussian terms");
     }
-    return GaussianWithPoly<T>(this->polynomial * B.polynomial, this->binomial + B.binomial,
-                   this->monomial + B.monomial);
+    return GaussianWithPoly<std::common_type_t<T, U>>(
+        this->polynomial * B.polynomial,
+        this->binomial + B.binomial,
+        this->monomial + B.monomial);
   }
 
   template<typename U>
@@ -343,8 +331,9 @@ struct GaussianWithPoly {
       throw Error(
           "Different dimension between gaussian term and polynomial term");
     }
-    return GaussianWithPoly<T>(this->polynomial * B, this->binomial + B.binomial,
-                   this->monomial + B.monomial);
+    return GaussianWithPoly<T>(this->polynomial * B,
+                               this->binomial,
+                               this->monomial);
   }
 
   template<typename U>
@@ -354,33 +343,21 @@ struct GaussianWithPoly {
       throw Error(
           "Different dimension between gaussian term and polynomial term");
     }
-    return GaussianWithPoly<T>(this->polynomial * B, this->binomial + B.binomial,
-                   this->monomial + B.monomial);
+    return GaussianWithPoly<T>(this->polynomial * B,
+                               this->binomial,
+                               this->monomial);
   }
 
   template<typename U>
   GaussianWithPoly<std::common_type_t<T, U>>
   operator*(const U B) const {
-    return GaussianWithPoly<T>(this->polynomial * polynomial::GaussianWithPoly<T>(this->dim(), B),
-                   this->binomial + B.binomial,
-                   this->monomial + B.monomial);
+    return GaussianWithPoly<std::common_type_t<T, U>>
+        (this->polynomial * (this->dim(), B),
+         this->binomial + B.binomial,
+         this->monomial + B.monomial);
   }
-
-//  Term<T> wigner_transform() const {
-//    arma::vec eigval;
-//    arma::mat eigvec;
-//    arma::eig_sym(eigval, eigvec, this->binomial);
-//
-//    const arma::mat real_space_binomial = 2 * this->binomial;
-//    const arma::vec real_space_monomial = 2 * this->monomial;
-//
-//    const double constant_part = 1.0 / pow(pi, this->dim()) * arma::det(eigvec);
-//
-//
-//  }
 };
 
-}
 
 //template<typename T>
 //struct Gaussian {

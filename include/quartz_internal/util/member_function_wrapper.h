@@ -6,12 +6,12 @@
 template<typename Function, typename T>
 auto at(const Function & function, const arma::Mat<T> & positions) {
 
-  const bool is_valid = has_at<Function, double(const arma::vec &)>::value ||
-                        has_at<Function, cx_double(const arma::vec &)>::value;
-
-  if(!is_valid) {
-    throw Error("the function passed in has no at member function");
-  }
+//TODO: It is pretty weird that the following SFINAE does not work
+//  const bool is_valid = has_at<Function, double(const arma::Mat<T> &)>::value ||
+//                        has_at<Function, cx_double(const arma::Mat<T> &)>::value;
+//  if(!is_valid) {
+//    throw Error("the function passed in has no at member function");
+//  }
 
   const arma::vec initial = positions.col(0);
   auto result =
