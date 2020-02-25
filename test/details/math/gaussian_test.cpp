@@ -143,5 +143,39 @@ TEST_CASE("Gaussian Integral") {
   }
 }
 
+TEST_CASE("GaussianWithPoly") {
+  SECTION("Real space") {
+    const Gaussian<double> test = Gaussian<double>(arma::mat{1});
+    const GaussianWithPoly<double> test_with_poly = GaussianWithPoly(test);
+
+    CHECK(test.integral() == test_with_poly.integral());
+
+    const Polynomial<double> polynomial_const = Polynomial<double>(1, 1.0);
+    CHECK(test.integral(polynomial_const) == test.integral());
+
+    const Polynomial<double> polynomial_null = Polynomial<double>(1);
+    const GaussianWithPoly<double> test_with_poly_null =
+        GaussianWithPoly(polynomial_null, test);
+
+    CHECK(test_with_poly_null.integral() == 0.);
+
+    const Polynomial<double> polynomial_1 = Polynomial<double>(arma::vec{1.0},
+                                                               lvec{1});
+    const auto test_with_poly_1 = GaussianWithPoly(polynomial_1, test);
+
+    CHECK(test_with_poly_1.integral() == 0.);
+
+    const Polynomial<double> polynomial_1_with_const =
+        Polynomial<double>(arma::vec{1.0, 1.0}, lmat{{1, 0}});
+    CHECK(GaussianWithPoly(polynomial_1_with_const, test).integral() ==
+          test.integral());
+
+    const Polynomial<double> polynomial_4 =
+        Polynomial<double>(arma::vec{1.0, 4.0}, lmat{{1, 0}});
+
+
+    CHECK(test.integral(polynomial_4) == GaussianWithPoly(polynomial_4,test).integral());
+  }
+}
 
 }

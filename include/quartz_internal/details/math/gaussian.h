@@ -205,7 +205,7 @@ struct GaussianWithPoly {
       gaussian(Gaussian<T>(dim, 1.0)) {}
 
   inline
-  GaussianWithPoly(const Polynomial<T> polynomial,
+  GaussianWithPoly(const Polynomial<T> & polynomial,
                    const arma::mat & binomial,
                    const arma::Col<T> & monomial) :
       polynomial(polynomial),
@@ -222,6 +222,18 @@ struct GaussianWithPoly {
           "Different dimension between polynomial term and gaussian term"
       );
     }
+  }
+
+  inline
+  GaussianWithPoly(const Polynomial<T> & polynomial,
+                   const Gaussian<T> & gaussian) :
+                   polynomial(polynomial * gaussian.coef),
+                   gaussian(gaussian) {
+    if(polynomial.dim() != gaussian.dim()) {
+      throw Error("Different dimension between polynomial term and gaussian term");
+    }
+
+    this->gaussian.coef = 1.0;
   }
 
   inline
@@ -271,9 +283,7 @@ struct GaussianWithPoly {
           "Different dimension between the position and the gaussian term");
     }
 
-    return this->polynomial.at(position) *
-           std::exp(-0.5 * arma::dot(position, this->binomial * position) +
-                    arma::dot(this->monomial, position));
+    return this->polynomial.at(position) * this->gaussian.at(position);
   }
 
   inline
@@ -284,14 +294,13 @@ struct GaussianWithPoly {
 
 
     const Polynomial<T> contribution_from_gaussian =
-        Polynomial<T>(-this->binomial.col(index),
+        Polynomial<T>(-this->gaussian.binomial.col(index),
                       arma::eye<lmat>(this->dim(), this->dim())) +
-        this->monomial(index);
+        this->gaussian.monomial(index);
 
     return GaussianWithPoly<T>(
         this->polynomial.derivative(index) + contribution_from_gaussian,
-        this->binomial,
-        this->monomial);
+        this->gaussian);
   }
 
   inline
@@ -312,6 +321,10 @@ struct GaussianWithPoly {
 
   }
 
+  inline
+  T integral() const {
+    return this->gaussian.integral(this->polynomial);
+  }
   template<typename U>
   GaussianWithPoly<std::common_type_t<T, U>>
   operator*(const GaussianWithPoly<U> & B) const {
@@ -319,9 +332,7 @@ struct GaussianWithPoly {
       throw Error("Different dimension between multiplied gaussian terms");
     }
     return GaussianWithPoly<std::common_type_t<T, U>>(
-        this->polynomial * B.polynomial,
-        this->binomial + B.binomial,
-        this->monomial + B.monomial);
+        this->polynomial * B.polynomial, this->gaussian * B.gaussian);
   }
 
   template<typename U>
@@ -331,9 +342,7 @@ struct GaussianWithPoly {
       throw Error(
           "Different dimension between gaussian term and polynomial term");
     }
-    return GaussianWithPoly<T>(this->polynomial * B,
-                               this->binomial,
-                               this->monomial);
+    return GaussianWithPoly<T>(this->polynomial * B, this->gaussian);
   }
 
   template<typename U>
@@ -343,18 +352,14 @@ struct GaussianWithPoly {
       throw Error(
           "Different dimension between gaussian term and polynomial term");
     }
-    return GaussianWithPoly<T>(this->polynomial * B,
-                               this->binomial,
-                               this->monomial);
+    return GaussianWithPoly<T>(this->polynomial * B, this->gaussian);
   }
 
   template<typename U>
   GaussianWithPoly<std::common_type_t<T, U>>
   operator*(const U B) const {
     return GaussianWithPoly<std::common_type_t<T, U>>
-        (this->polynomial * (this->dim(), B),
-         this->binomial + B.binomial,
-         this->monomial + B.monomial);
+        (this->polynomial * B, this->gaussian);
   }
 };
 

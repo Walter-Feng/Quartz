@@ -93,8 +93,8 @@ struct Term {
   }
 
   template<typename U>
-  U differentiate(const U & function) const {
-    return this->coef * function.derivative(this->indices);
+  auto differentiate(const U & function) const {
+    return function.derivative(this->indices) * this->coef;
   }
 
   inline
@@ -210,8 +210,8 @@ public:
   }
 
   template<typename U>
-  U differentiate(const U & function) const {
-    U result = U(function.dim());
+  auto differentiate(const U & function) const {
+    auto result = this->term(0).differentiate(function);
 #pragma omp parallel for
     for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
       const polynomial::Term<T> term = this->term(i);
