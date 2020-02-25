@@ -15,11 +15,11 @@ TEST_CASE("Polynomial Value") {
     const Polynomial<double> squared = Polynomial<double>(arma::vec{0.5},
                                                           lmat{{{2}}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(squared.at(arma::vec{grid(i)}) == 0.5 * std::pow(grid(i), 2));
     }
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(
           std::abs(std::real(
               squared.at(
@@ -30,7 +30,7 @@ TEST_CASE("Polynomial Value") {
     const Polynomial<double> cubed = Polynomial<double>(arma::vec{0.5},
                                                         lmat{{{3}}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(cubed.at(arma::vec{grid(i)}) == 0.5 * std::pow(grid(i), 3));
     }
 
@@ -38,7 +38,7 @@ TEST_CASE("Polynomial Value") {
         arma::vec{0.5, 0.3},
         lmat{{{2, 3}}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(squared_and_cubed.at(arma::vec{grid(i)}) ==
             0.5 * std::pow(grid(i), 2) + 0.3 * std::pow(grid(i), 3));
     }
@@ -53,7 +53,7 @@ TEST_CASE("Polynomial Value") {
             lmat{{{2}}}
         );
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::real(squared.at(arma::vec{grid(i)})) ==
             0.5 * std::pow(grid(i), 2));
     }
@@ -64,7 +64,7 @@ TEST_CASE("Polynomial Value") {
             lmat{{{3}}}
         );
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::real(cubed.at(arma::vec{grid(i)})) ==
             0.5 * std::pow(grid(i), 3));
     }
@@ -75,7 +75,7 @@ TEST_CASE("Polynomial Value") {
             lmat{{{2, 3}}}
         );
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::real(squared_and_cubed.at(arma::vec{grid(i)})) ==
             0.5 * std::pow(grid(i), 2) + 0.3 * std::pow(grid(i), 3));
     }
@@ -90,11 +90,11 @@ TEST_CASE("Polynomial Value") {
 
     arma::vec result_lhs = arma::vec(10);
     arma::vec result_rhs = arma::vec(10);
-    for (int i = 0; i < 10; i++) {
+    for (arma::uword i = 0; i < 10; i++) {
       const arma::vec each_position = grid.col(i);
       result_lhs(i) = random_term.at(each_position);
       double result_rhs_temp = 1;
-      for (int j = 0; j < 10; j++) {
+      for (arma::uword j = 0; j < 10; j++) {
         result_rhs_temp *= std::pow(grid(j), indices(j));
       }
       result_rhs(i) = result_rhs_temp;
@@ -124,12 +124,12 @@ TEST_CASE("Operators") {
 
     const auto sum = squared + cx_cubed;
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(sum.at(arma::vec{grid(i)}) ==
             squared_and_cubed.at(arma::vec{grid(i)}));
     }
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(sum.at(arma::cx_vec{cx_grid(i)}) ==
             squared_and_cubed.at(arma::cx_vec{cx_grid(i)}));
     }
@@ -141,7 +141,7 @@ TEST_CASE("Operators") {
     const auto squared_by_cubed =
         Polynomial<cx_double>(arma::cx_vec{0.15}, lmat{{{5}}});
 
-    for(int i=0; i<grid.n_elem; i++) {
+    for(arma::uword i=0; i<grid.n_elem; i++) {
       CHECK(product.at(arma::vec{grid(i)}) == squared_by_cubed.at(arma::vec{grid(i)}));
     }
   }
@@ -152,12 +152,12 @@ TEST_CASE("Operators") {
         arma::vec{0.5, -0.3},
         lmat{{{2, 3}}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(subtracted.at(arma::vec{grid(i)}) ==
             squared_without_cubed.at(arma::vec{grid(i)}));
     }
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(subtracted.at(arma::cx_vec{cx_grid(i)}) ==
             squared_without_cubed.at(arma::cx_vec{cx_grid(i)}));
     }
@@ -174,12 +174,12 @@ TEST_CASE("Operators") {
         arma::cx_vec{0.25, -0.09},
         lmat{{{4, 6}}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::abs(product.at(arma::vec{grid(i)}) -
             result.at(arma::vec{grid(i)})) < 1e-14);
     }
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::abs(product.at(arma::cx_vec{cx_grid(i)}) -
             result.at(arma::cx_vec{cx_grid(i)})) < 1e-14);
     }

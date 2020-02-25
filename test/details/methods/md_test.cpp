@@ -9,7 +9,7 @@ using namespace quartz::method;
 TEST_CASE("MD Test") {
   SECTION("One Dimension") {
 
-    const Gaussian real_space = Gaussian(arma::mat{1.}, arma::vec{1.});
+    const Gaussian<double> real_space = Gaussian<double>(arma::mat{1.}, arma::vec{1.});
     const Polynomial<double> potential = Polynomial<double>(arma::vec{0.5},
                                                             lvec{2});
 
