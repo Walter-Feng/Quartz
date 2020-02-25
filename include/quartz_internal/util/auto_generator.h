@@ -11,7 +11,7 @@ math::Polynomial<T> kinetic_energy(const arma::uword real_space_dim) {
 }
 
 template<typename T>
-math::Polynomial<T> hamiltoninan(const math::Polynomial<T> & potential) {
+math::Polynomial<T> hamiltonian(const math::Polynomial<T> & potential) {
   const auto dim = potential.dim();
 
   const auto potential_part =
@@ -19,7 +19,7 @@ math::Polynomial<T> hamiltoninan(const math::Polynomial<T> & potential) {
                           arma::join_cols(potential.indices,
                                           arma::zeros<lvec>(dim,dim)));
 
-  return potential_part + kinetic_energy(dim);
+  return potential_part + kinetic_energy<T>(dim);
 }
 
 

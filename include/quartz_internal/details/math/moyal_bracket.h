@@ -38,7 +38,7 @@ Polynomial<double> polynomial_poisson_operator(arma::uword n_real_space_dim) {
                                table)) = 1; // set the d_x operator to the right function
 
     result = result + polynomial::Term<double>(1, xp) +
-             polynomial::Term<double>(-1, xp);
+             polynomial::Term<double>(-1, px);
   }
 
   return result;
@@ -94,10 +94,10 @@ auto moyal_bracket(const A & a, const H & h, const arma::uword cut_off) {
   auto result = details::poisson_operate(poisson_op, a, h);
   for (arma::uword i = 1; i < cut_off; i++) {
     result = result +
-        details::poisson_operate(
-            std::pow(-1, i) / factorial(2 * i + 1) / std::pow(2, 2*i)
-            * poisson_op.pow(2 * i + 1),
-            a, h);
+             details::poisson_operate(
+                 poisson_op.pow(2 * i + 1) * std::pow(-1, i)
+                 / factorial(2 * i + 1) / std::pow(2, 2 * i),
+                 a, h);
   }
 
   return result;
@@ -125,7 +125,7 @@ auto moyal_bracket(const Functor & post_functor,
   for (arma::uword i = 1; i < cut_off; i++) {
     result = result +
              details::poisson_operate(
-                 std::pow(-1, i) / factorial(2 * i + 1) / std::pow(2, 2*i)
+                 std::pow(-1, i) / factorial(2 * i + 1) / std::pow(2, 2 * i)
                  * poisson_op.pow(2 * i + 1),
                  a, h);
   }

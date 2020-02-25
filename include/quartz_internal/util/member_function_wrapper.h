@@ -31,15 +31,17 @@ auto derivative(const Function & function, const arma::uword index) {
 }
 
 template<typename Function>
-auto derivative(const Function & function, const arma::uvec index) {
+auto derivative(const Function & function, const arma::uvec & index) {
 
   Function result = function;
 
   for (arma::uword i = 0; i < index.n_elem; i++) {
     for (arma::uword j = 0; j < index(i); j++) {
-      result = result.derivative(j);
+      result = result.derivative(i);
     }
   }
+
+  return result;
 }
 
 

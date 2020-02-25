@@ -4,7 +4,7 @@
 #include "alias.h"
 #include "trivial.h"
 #include "quartz_internal/error.h"
-
+#include "quartz_internal/util/member_function_wrapper.h"
 #include "quartz_internal/util/type_converter.h"
 
 namespace math {
@@ -85,7 +85,7 @@ struct Term {
 #pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
-        result = result.derivative(j);
+        result = result.derivative(i);
       }
     }
 
@@ -94,7 +94,10 @@ struct Term {
 
   template<typename U>
   auto differentiate(const U & function) const {
-    return function.derivative(this->indices) * this->coef;
+    if(arma::min(this->indices) < 0) {
+      throw Error("Quartz does not support integration operator");
+    }
+    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(this->indices)) * this->coef;
   }
 
   inline
@@ -189,7 +192,7 @@ public:
       result = result + this->term(i).derivative(index);
     }
 
-    return result;
+    return result.clean();
   }
 
   inline
@@ -202,11 +205,11 @@ public:
 #pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
-        result = result.derivative(j);
+        result = result.derivative(i);
       }
     }
 
-    return result;
+    return result.clean();
   }
 
   template<typename U>
@@ -294,7 +297,7 @@ public:
     }
     Polynomial<T> result = *this;
     for (arma::uword i = 0; i < power; i++) {
-      result *= *this;
+      result = result * *this;
     }
 
     return result;
@@ -345,7 +348,7 @@ public:
         new_coefs =
         arma::join_cols(converted_this_coefs, converted_B_coefs);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -358,7 +361,7 @@ public:
     const arma::Col<std::common_type_t<T, U>> new_coefs = arma::join_cols(
         this->coefs, B);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -371,7 +374,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = arma::join_cols(converted_this_coefs, converted_B_coef);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -382,7 +385,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = this->coefs * B.coef;
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -394,12 +397,12 @@ public:
       result_0 = result_0 + (*this) * B.term(i);
     }
 
-    return result_0;
+    return result_0.clean();
   }
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator*(const U B) const {
-    return {this->coefs * B, this->indices};
+    return Polynomial<std::common_type_t<T, U>>{this->coefs * B, this->indices}.clean();
   }
 
   template<typename U>
@@ -418,7 +421,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = arma::join_cols(this->coefs, -B);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -433,7 +436,16 @@ public:
     new_indices.each_col() -= B.indices;
     const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+  }
+
+  Polynomial<T> clean() const {
+    const arma::uvec non_zero = arma::find(this->coefs);
+
+    if(non_zero.n_elem == 0) {
+      return Polynomial<T>(this->dim());
+    }
+    return Polynomial<T>(this->coefs.rows(non_zero), this->indices.cols(non_zero));
   }
 
 };
