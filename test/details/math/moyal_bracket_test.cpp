@@ -27,6 +27,7 @@ TEST_CASE("Moyal Bracket") {
 
     CHECK(moyal_bracket(p, h2, 3).coefs(0) == -1);
     CHECK(moyal_bracket(p, h2, 3).indices(0,0) == 1);
+
   }
 }
 

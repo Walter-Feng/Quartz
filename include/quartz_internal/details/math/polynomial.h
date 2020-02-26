@@ -358,8 +358,10 @@ public:
         this->indices.n_rows);
     const lmat new_indices = arma::join_rows(this->indices,
                                              dummy_indices);
+    const arma::Col<std::common_type_t<T,U>> converted_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T,U>>>::from(this->coefs);
     const arma::Col<std::common_type_t<T, U>> new_coefs = arma::join_cols(
-        this->coefs, B);
+        converted_coefs, arma::Col<std::common_type_t<T,U>>{B});
 
     return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }

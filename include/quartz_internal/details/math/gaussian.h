@@ -18,14 +18,14 @@ struct Gaussian {
   Gaussian(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
       binomial(arma::zeros<arma::mat>(dim, dim)),
-      monomial(arma::zeros<arma::vec>(dim, dim)) {}
+      monomial(arma::zeros<arma::vec>(dim)) {}
 
 
   inline
-  Gaussian(const arma::mat & binomial) :
-      coef(T{1.0}),
+  Gaussian(const arma::mat & binomial, const T coef = T{1.0}) :
+      coef(coef),
       binomial(binomial),
-      monomial(arma::zeros<arma::vec>(binomial.n_rows, binomial.n_rows)) {
+      monomial(arma::zeros<arma::vec>(binomial.n_rows)) {
     if (!binomial.is_symmetric()) {
       throw Error("The binomial term is not symmetric");
     }
@@ -288,7 +288,7 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly<T> derivative(const arma::uword index) const {
-    if (index >= this->dim) {
+    if (index >= this->dim()) {
       throw Error("Derivative operator out of bound");
     }
 
@@ -325,6 +325,28 @@ struct GaussianWithPoly {
   T integral() const {
     return this->gaussian.integral(this->polynomial);
   }
+
+  template<typename U>
+  GaussianWithPoly<std::common_type_t<T, U>>
+  operator+(const GaussianWithPoly<U> & B) const {
+    if (this->dim() != B.dim()) {
+      throw Error("Different dimension between multiplied gaussian terms");
+    }
+    if(!arma::approx_equal(this->gaussian.monomial, B.gaussian.monomial, "abs_diff", 1e-16) ||
+       !arma::approx_equal(this->gaussian.binomial, B.gaussian.binomial, "abs_diff", 1e-16)) {
+      throw Error("GaussianWithPoly does not support adding with different gaussian terms");
+    }
+    return GaussianWithPoly<std::common_type_t<T, U>>(
+        this->polynomial + B.polynomial, this->gaussian);
+  }
+
+  template<typename U>
+  GaussianWithPoly<std::common_type_t<T, U>>
+  operator-(const GaussianWithPoly<U> & B) const {
+    return GaussianWithPoly<std::common_type_t<T, U>>(
+        this->polynomial - B.polynomial, this->gaussian);
+  }
+
   template<typename U>
   GaussianWithPoly<std::common_type_t<T, U>>
   operator*(const GaussianWithPoly<U> & B) const {
