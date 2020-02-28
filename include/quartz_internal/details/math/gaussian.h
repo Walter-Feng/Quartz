@@ -114,6 +114,43 @@ struct Gaussian {
            polynomial_part;
   }
 
+  template<typename U>
+  std::common_type_t<T, U> expectation(const Polynomial<U> & polynomial) const {
+
+    if (polynomial.dim() != this->dim()) {
+      throw Error(
+          "Different dimension between the gaussian term and polynomial term");
+    }
+
+
+    const arma::mat inv_binomial = arma::inv(this->binomial);
+
+    const auto functor = [&inv_binomial](
+        const Polynomial<T> & poly) -> Polynomial<T> {
+      Polynomial<T> result = Polynomial<T>(poly.dim());
+
+      for (arma::uword i = 0; i < poly.dim(); i++) {
+        for (arma::uword j = 0; j < poly.dim(); j++) {
+          result = result +
+                   poly.derivative(i).derivative(j) * 0.5 * inv_binomial(i, j);
+        }
+      }
+
+      return result;
+    };
+
+    const auto post_functor = [this](const Polynomial<T> & poly) {
+
+      return poly.at(this->monomial);
+    };
+    const std::common_type_t<T, U> polynomial_part = exp(functor, post_functor,
+                                                         polynomial,
+                                                         polynomial.grade() /
+                                                         2);
+
+    return polynomial_part;
+  }
+
 
   inline
   arma::Col<T> mean() const {

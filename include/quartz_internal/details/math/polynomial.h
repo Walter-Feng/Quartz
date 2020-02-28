@@ -296,7 +296,7 @@ public:
       return Polynomial<T>(this->dim(), 1.0);
     }
     Polynomial<T> result = *this;
-    for (arma::uword i = 0; i < power; i++) {
+    for (arma::uword i = 1; i < power; i++) {
       result = result * *this;
     }
 
