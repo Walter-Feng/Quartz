@@ -157,11 +157,8 @@ public:
     if (this->covariances.n_slices <= i) {
       throw Error("packet enquiry out of bound");
     }
-    const arma::mat inv_covariance = arma::inv(this->covariances.slice(i));
-    const arma::vec B = inv_covariance * this->points.col(i);
 
-    math::Gaussian<double> result(inv_covariance,
-                                  inv_covariance * this->points.col(i));
+    math::Gaussian<double> result(this->covariances.slice(i),this->points.col(i));
 
     return result;
   }
@@ -222,8 +219,6 @@ public:
       }
     }
 
-    momentum_change.print("momentum_change");
-
     const arma::mat point_change = arma::join_cols(position_change,momentum_change);
 
     arma::cube covariances_change(arma::size(state.covariances));
@@ -238,7 +233,6 @@ public:
             math::moyal_bracket(variable,
                 hamiltonian(this->potential, state.masses), variable.grade());
         for(arma::uword k=0; k<state.covariances.n_slices; k++) {
-
           covariances_change(i,j,k) = state.packet(k).expectation(variable_moyal_bracket);
         }
       }

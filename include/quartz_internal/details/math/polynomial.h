@@ -450,6 +450,21 @@ public:
     return Polynomial<T>(this->coefs.rows(non_zero), this->indices.cols(non_zero));
   }
 
+  std::string to_string(const int precision = 6,
+                        const int width = 12) const {
+    std::string result = "";
+
+    for(arma::uword i=0; i<this->indices.n_cols; i++) {
+      result = result + "+ " +
+          utils::to_string_with_precision(this->coefs(i), precision, width) + " ( ";
+      for(arma::uword j=0; j<this->indices.n_rows; j++) {
+        result = result + "x" + std::to_string(j) + "^" + std::to_string(this->indices(j,i)) + " ";
+      }
+      result = result + ") \n";
+    }
+    return result;
+  }
+
 };
 
 template<typename T>

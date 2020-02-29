@@ -72,8 +72,8 @@ TEST_CASE("Propagate") {
 
     const auto initial_state =
         method::packet::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
-                              arma::uvec{10,10},
-                              arma::mat{{-5, 5},{-5,5}});
+                              arma::uvec{20,20},
+                              arma::mat{{-10, 10},{-10,10}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
                                                              lmat{2});
