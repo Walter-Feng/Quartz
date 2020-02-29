@@ -80,7 +80,7 @@ public:
       points(math::space::points_generate(grid, range)),
       weights(arma::real(at(initial, points))),
       covariances(
-          details::covariances_generator(initial.covariance(), initial.mean(),
+          details::covariances_generator(initial.covariance, initial.mean,
                                          points, weights)),
       masses(arma::ones<arma::vec>(grid.n_elem / 2)) {
     if (grid.n_elem % 2 != 0) {
