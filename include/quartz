@@ -5,6 +5,7 @@
 
 #include <armadillo>
 #include <iomanip>
+#include <sstream>
 #include <omp.h>
 
 
@@ -37,6 +38,7 @@ const std::string version = "0.0.1";
 // Methods
 #include "quartz_internal/details/methods/dvr.h"
 #include "quartz_internal/details/methods/md.h"
+#include "quartz_internal/details/methods/packet.h"
 // #include "quartz_internal/details/methods/method_template.h"
 
 //utils
