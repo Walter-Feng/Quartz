@@ -31,23 +31,6 @@ math::Polynomial<T> detail_B(const arma::Col<T> & a_vector,
 }
 } // namespace details
 
-template<typename T>
-Propagator<ExampleState<T>, math::Polynomial<T>, T>
-    propagator(const State & state,
-               const Polynomial<T> & potential,
-               const double dt) {
-  // State your requirement of potential, for example,
-  // you will only need the potential defined over the real space (such as DVR),
-  // by requiring the potential (Polynomial<T> type here)
-  // to have .at() as a member function,
-  // or you might need the second derivative,
-  // by requiring the potential
-  // to have .derivative(arma::Col<T>) as a member function.
-
-  // your implementation here
-
-
-}
 
 } // namespace method_template
 
@@ -84,14 +67,65 @@ public:
 
   //To enable generic printer you need to implement these functions
   inline
-  arma::vec positional_expectation() {
+  arma::vec positional_expectation() const {
     // your specific implementation to report the expectations for real space positions
   }
   inline
-  arma::vec momentum_expectation() {
+  arma::vec momentum_expectation() const {
     // your specific implementation to report the expectations for momentum
   }
+
+  // To enable some useful wrappers such as runge_kutta methods, simple binary operators
+  // (+ another state, * a constant)
+  // need to be specified
+  template<typename U>
+  ExampleState<std::common_type_t<T,U>>
+  operator + (const ExampleState<U> & B) const {
+
+    return *this + B;
+  }
+
+  // To enable some useful wrappers such as runge_kutta methods, simple binary operators
+  // (+ another state, * a constant)
+  // need to be specified
+  template<typename U>
+  ExampleState<std::common_type_t<T,U>>
+  operator * (const U B) const {
+
+    return *this * B;
+  }
 };
+
+// State your requirement of potential, for example,
+// you will only need the potential defined over the real space (such as DVR),
+// by requiring the potential (Polynomial<T> type here)
+// to have .at() as a member function.
+// Add member function check to util/check_member.h if necessary.
+
+template<typename Potential>
+struct Operator {
+
+private:
+  PropagationType type = Classic;
+
+public:
+  Potential potential;
+
+  Operator(const State & state,
+           const Potential & potential) :
+      potential(potential) {}
+
+
+  inline
+  PropagationType propagation_type() const {
+    return Classic;
+  }
+
+  State operator()(const State & state) const {
+  }
+
+};
+
 
 }
 

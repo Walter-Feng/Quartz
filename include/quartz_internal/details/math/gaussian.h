@@ -45,6 +45,25 @@ struct Gaussian {
     }
   }
 
+  inline
+  Gaussian<cx_double>(const arma::mat & covariance,
+                      const arma::vec & mean,
+                      const arma::vec & phase_factor,
+                      const cx_double coef = 1.0) :
+      coef(coef),
+      covariance(covariance),
+      mean(mean + arma::cx_vec{arma::zeros(arma::size(mean)), covariance * phase_factor}) {
+    if(mean.n_elem != phase_factor.n_elem) {
+      throw Error("Different dimension between the mean and phase factor");
+    }
+    if (covariance.n_rows != mean.n_elem) {
+      throw Error("Different dimension between the covariance and mean term");
+    }
+    if (!covariance.is_symmetric()) {
+      throw Error("The covariance term is not symmetric");
+    }
+  }
+
 
   inline
   arma::uword dim() const {
