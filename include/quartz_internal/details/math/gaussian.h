@@ -12,20 +12,20 @@ template<typename T>
 struct Gaussian {
   T coef;
   arma::mat covariance;
-  arma::Col<T> mean;
+  arma::Col<T> center;
 
   inline
   Gaussian(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
       covariance(arma::eye<arma::mat>(dim, dim)),
-      mean(arma::zeros<arma::vec>(dim)) {}
+      center(arma::zeros<arma::vec>(dim)) {}
 
 
   inline
   Gaussian(const arma::mat & covariance, const T coef = T{1.0}) :
       coef(coef),
       covariance(covariance),
-      mean(arma::zeros<arma::vec>(covariance.n_rows)) {
+      center(arma::zeros<arma::vec>(covariance.n_rows)) {
     if (!covariance.is_symmetric()) {
       throw Error("The covariance term is not symmetric");
     }
@@ -36,9 +36,9 @@ struct Gaussian {
            const T coef = T{1.0}) :
       coef(coef),
       covariance(covariance),
-      mean(mean) {
+      center(mean) {
     if (covariance.n_rows != mean.n_elem) {
-      throw Error("Different dimension between the covariance and mean term");
+      throw Error("Different dimension between the covariance and center term");
     }
     if (!covariance.is_symmetric()) {
       throw Error("The covariance term is not symmetric");
@@ -46,24 +46,26 @@ struct Gaussian {
   }
 
   inline
-  Gaussian<cx_double>(const arma::mat & covariance,
-                      const arma::vec & mean,
-                      const arma::vec & phase_factor,
-                      const cx_double coef = 1.0) :
-      coef(coef),
-      covariance(covariance),
-      mean(mean + arma::cx_vec{arma::zeros(arma::size(mean)), covariance * phase_factor}) {
-    if(mean.n_elem != phase_factor.n_elem) {
-      throw Error("Different dimension between the mean and phase factor");
+  Gaussian<cx_double> with_phase_factor(const arma::vec & phase_factor) const {
+    if (this->dim() != phase_factor.n_elem) {
+      throw Error(
+          "Different dimension between the gaussian function and phase factor");
     }
-    if (covariance.n_rows != mean.n_elem) {
-      throw Error("Different dimension between the covariance and mean term");
-    }
-    if (!covariance.is_symmetric()) {
-      throw Error("The covariance term is not symmetric");
-    }
+
+    const arma::cx_vec new_mean =
+        this->center + cx_double{0.0, 1.0} * this->covariance * phase_factor;
+    return Gaussian<cx_double>(this->covariance, new_mean, this->coef);
   }
 
+  inline
+  arma::mat cov() const {
+    return this->covariance;
+  }
+
+  inline
+  arma::Col<T> mean() const {
+    return this->center;
+  }
 
   inline
   arma::uword dim() const {
@@ -77,9 +79,9 @@ struct Gaussian {
     }
 
     return this->coef * std::exp(
-        -0.5 * arma::dot(position - this->mean,
+        -0.5 * arma::dot(position - this->center,
                          arma::inv(this->covariance) *
-                         (position - this->mean)));
+                         (position - this->center)));
   }
 
   inline
@@ -115,7 +117,7 @@ struct Gaussian {
 
     const auto post_functor = [this](const Polynomial<T> & poly) {
 
-      return poly.at(this->mean);
+      return poly.at(this->center);
     };
     const std::common_type_t<T, U> polynomial_part = exp(functor, post_functor,
                                                          polynomial,
@@ -136,7 +138,7 @@ struct Gaussian {
   }
 
   inline
-  Gaussian<T> wigner_transform() const {
+  Gaussian<double> wigner_transform() const {
     arma::vec eigenvalues;
     arma::mat eigenvectors;
 
@@ -147,29 +149,31 @@ struct Gaussian {
 
     const arma::mat zero_matrix = arma::zeros(arma::size(this->covariance));
     const arma::mat real_space_covariance_part = 0.5 * this->covariance;
-    const arma::vec real_space_mean_part = arma::real(this->mean);
+    const arma::vec real_space_mean_part = arma::real(this->center);
     const arma::mat momentum_space_covariance_part =
         0.5 * eigenvectors * transformed_covariance * eigenvectors.t();
     const arma::vec momentum_space_mean_part =
-        arma::imag(arma::inv(this->covariance) * this->mean);
+        arma::imag(arma::inv(this->covariance) * this->center);
     const arma::mat new_covariance =
         arma::join_cols(
             arma::join_rows(real_space_covariance_part, zero_matrix),
             arma::join_rows(zero_matrix,
                             momentum_space_covariance_part));
-    const arma::Col<T> new_mean =
-        arma::conv_to<arma::Col<T>>::from(arma::join_cols(real_space_mean_part,
-                                                          momentum_space_mean_part));
+    const arma::vec new_mean = arma::join_cols(real_space_mean_part,
+                                               momentum_space_mean_part);
     const double constant_part =
         std::sqrt(arma::prod(eigenvalues)) *
         std::pow(1.0 / pi, this->dim() / 2.0);
 
-    return Gaussian<T>(new_covariance, new_mean, this->coef * constant_part);
+    assert(std::imag(this->coef) == 0);
+
+    return Gaussian<double>(new_covariance, new_mean,
+                            std::real(this->coef) * constant_part);
   }
 
   template<typename U>
   Gaussian<std::common_type_t<T, U>> operator*(const U B) const {
-    return Gaussian<std::common_type_t<T, U>>(this->covariance, this->mean,
+    return Gaussian<std::common_type_t<T, U>>(this->covariance, this->center,
                                               this->coef * B);
   }
 
@@ -177,7 +181,7 @@ struct Gaussian {
   Gaussian<std::common_type_t<T, U>>
   operator*(const exponential::Term<U> & B) const {
     return Gaussian<std::common_type_t<T, U>>(this->covariance,
-                                              this->mean + B.wavenumbers,
+                                              this->center + B.wavenumbers,
                                               this->coef * B.coef);
   }
 
@@ -191,7 +195,7 @@ struct Gaussian {
     const arma::mat new_covariance = arma::inv(this_A + B_A);
 
     const arma::Col<std::common_type_t<T, U>> new_mean =
-        new_covariance * (this_A * this->mean + B_A * B.mean);
+        new_covariance * (this_A * this->center + B_A * B.center);
 
     return
         Gaussian<std::common_type_t<T, U>>(new_covariance,
@@ -223,7 +227,7 @@ struct GaussianWithPoly {
     }
     if (covariance.n_rows != mean.n_elem) {
       throw Error(
-          "Different dimension between covariance term and mean term");
+          "Different dimension between covariance term and center term");
     }
     if (covariance.n_rows != polynomial.dim()) {
       throw Error(
@@ -256,7 +260,7 @@ struct GaussianWithPoly {
     }
     if (covariance.n_rows != mean.n_elem) {
       throw Error(
-          "Different dimension between covariance term and mean term");
+          "Different dimension between covariance term and center term");
     }
   }
 
@@ -277,7 +281,7 @@ struct GaussianWithPoly {
 
   inline
   arma::uword dim() const {
-    return this->gaussian.mean.n_elem;
+    return this->gaussian.center.n_elem;
   }
 
   inline
@@ -305,7 +309,7 @@ struct GaussianWithPoly {
     const Polynomial<T> contribution_from_gaussian =
         Polynomial<T>(-this->gaussian.covariance.col(index),
                       arma::eye<lmat>(this->dim(), this->dim())) +
-        this->gaussian.mean(index);
+        this->gaussian.center(index);
 
     return GaussianWithPoly<T>(
         this->polynomial.derivative(index) + contribution_from_gaussian,
@@ -341,7 +345,8 @@ struct GaussianWithPoly {
     if (this->dim() != B.dim()) {
       throw Error("Different dimension between multiplied gaussian terms");
     }
-    if (!arma::approx_equal(this->gaussian.mean, B.gaussian.mean, "abs_diff",
+    if (!arma::approx_equal(this->gaussian.center, B.gaussian.center,
+                            "abs_diff",
                             1e-16) ||
         !arma::approx_equal(this->gaussian.covariance, B.gaussian.covariance,
                             "abs_diff", 1e-16)) {
@@ -415,14 +420,14 @@ struct GaussianWithPoly {
 //  inline
 //  Gaussian(const Polynomial <T> polynomial,
 //           const arma::mat & covariance,
-//           const arma::vec & mean) :
-//      terms({gaussian::Term<T>(polynomial, covariance, mean)}) {}
+//           const arma::vec & center) :
+//      terms({gaussian::Term<T>(polynomial, covariance, center)}) {}
 //
 //  inline
 //  Gaussian(const arma::mat & covariance,
-//           const arma::vec & mean,
+//           const arma::vec & center,
 //           const T coef = 1.0) :
-//      terms({gaussian::Term<T>(covariance,mean,coef)}) {}
+//      terms({gaussian::Term<T>(covariance,center,coef)}) {}
 //
 //  explicit
 //  inline

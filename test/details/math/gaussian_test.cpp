@@ -97,7 +97,7 @@ TEST_CASE("Gaussian Integral") {
 
     const auto WT_test = test_complex.wigner_transform();
 
-    const auto mean = WT_test.mean;
+    const auto mean = WT_test.center;
     CHECK(std::real(mean(1)) == 2);
 
   }
