@@ -59,7 +59,7 @@ public:
       points(math::space::points_generate(grid, range)),
       weights(arma::real(at(initial, points))),
       covariances(
-          details::covariances_generator(initial.covariance(), initial.mean(),
+          details::covariances_generator(initial.cov(), initial.mean(),
                                          points, weights)),
       masses(masses) {
     if (grid.n_elem % 2 != 0) {
@@ -80,7 +80,7 @@ public:
       points(math::space::points_generate(grid, range)),
       weights(arma::real(at(initial, points))),
       covariances(
-          details::covariances_generator(initial.covariance, initial.mean,
+          details::covariances_generator(initial.cov(), initial.mean(),
                                          points, weights)),
       masses(arma::ones<arma::vec>(grid.n_elem / 2)) {
     if (grid.n_elem % 2 != 0) {
@@ -179,9 +179,6 @@ public:
 };
 
 struct Operator {
-
-private:
-  PropagationType type = Classic;
 
 public:
   math::Polynomial<double> potential;
