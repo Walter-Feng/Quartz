@@ -73,8 +73,9 @@ auto linear_combination_in_gaussian_basis(const Function & function,
                                                     test_gaussian_mean);
 
   const auto test_multiplied = function * test_gaussian;
-  const auto integral = test_multiplied.integral();
-  auto expectations = arma::Col<decltype(integral)>(points.n_cols);
+  auto integral = test_multiplied.integral();
+  arma::Col<decltype(integral)> expectations =
+      arma::Col<decltype(integral)>(points.n_cols).eval();
 
 #pragma omp parallel for
   for (arma::uword i = 0; i < expectations.n_elem; i++) {
@@ -82,10 +83,12 @@ auto linear_combination_in_gaussian_basis(const Function & function,
     const auto multiplied =
         function * math::Gaussian<double>(covariances.slice(i),
                                           col_i);
+
     expectations(i) = multiplied.integral();
   }
 
-  return arma::inv(overlap) * expectations;
+  const arma::Col<decltype(integral)> coefs = arma::inv(overlap) * expectations;
+  return coefs;
 }
 
 inline
@@ -281,11 +284,11 @@ public:
       hamiltonian(quartz::hamiltonian(potential)) {
 
     const arma::uword total = state.covariances.n_slices;
-    arma::mat f(total, total);
+    arma::mat f(total, total, arma::fill::zeros);
 
 #pragma omp parallel for
     for (arma::uword i = 0; i < total; i++) {
-      for (arma::uword j = 0; j < total; j++) {
+      for (arma::uword j = i+1; j < total; j++) {
         const auto gaussian_i = math::GaussianWithPoly(state.packet(i));
         const auto gaussian_j = math::GaussianWithPoly(state.packet(j));
 
@@ -302,8 +305,8 @@ public:
       }
     }
 
-    this->fock = f;
-    this->propagation_matrix = arma::inv(state.overlap) * f;
+    this->fock = f - f.t();
+    this->propagation_matrix = arma::inv(state.overlap) * this->fock;
 
   }
 

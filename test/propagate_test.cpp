@@ -94,6 +94,36 @@ TEST_CASE("Propagate") {
 
 
   }
+
+  SECTION("Fixed Gaussian Basis") {
+
+    const double dt = 0.01;
+
+    const auto initial_state =
+        method::fgb::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
+                              arma::uvec{30,30},
+                              arma::mat{{-5, 5},{-5,5}},
+                              1);
+
+    const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
+                                                             lmat{2});
+
+    const auto op = method::fgb::Operator(initial_state, harmonic_potential);
+
+    const auto wrapper =
+        math::runge_kutta_4<method::fgb::Operator,
+            method::fgb::State,
+            math::Polynomial<double>>;
+
+    const auto result = propagate(initial_state,
+                                  op,
+                                  wrapper,
+                                  harmonic_potential,
+                                  generic_printer<method::fgb::State>, 10, dt,
+                                  2);
+
+
+  }
 }
 
 }

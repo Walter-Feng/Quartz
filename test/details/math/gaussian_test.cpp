@@ -135,6 +135,7 @@ TEST_CASE("GaussianWithPoly") {
 
 
     CHECK(test.integral(polynomial_4) == GaussianWithPoly(polynomial_4,test).integral());
+
   }
 }
 
