@@ -305,11 +305,13 @@ struct GaussianWithPoly {
       throw Error("Derivative operator out of bound");
     }
 
+    const arma::mat inv_covariance = arma::inv(this->gaussian.covariance);
+    const arma::Col<T> B = inv_covariance * this->gaussian.center;
 
     const Polynomial<T> contribution_from_gaussian =
-        Polynomial<T>(-this->gaussian.covariance.col(index),
-                      arma::eye<lmat>(this->dim(), this->dim())) +
-        this->gaussian.center(index);
+        (Polynomial<T>(-inv_covariance.col(index),
+                       arma::eye<lmat>(this->dim(), this->dim())) + B(index))
+        * this->polynomial;
 
     return GaussianWithPoly<T>(
         this->polynomial.derivative(index) + contribution_from_gaussian,

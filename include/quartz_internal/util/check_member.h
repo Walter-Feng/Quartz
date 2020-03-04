@@ -255,7 +255,7 @@ struct has_normalise {
 // specialization that does the checking
 
 template<typename C, typename Ret, typename... Args>
-struct has_momentum_expectation<C, Ret(Args...)> {
+struct has_normalise<C, Ret(Args...)> {
 private:
   template<typename T>
   static constexpr auto check(T*)
