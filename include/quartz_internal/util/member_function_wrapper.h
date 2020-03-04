@@ -16,8 +16,8 @@ auto at(const Function & function, const arma::Mat<T> & positions) {
   const arma::vec initial = positions.col(0);
   auto result =
       arma::Col<decltype(function.at(initial))>(positions.n_cols);
-  #pragma omp parallel for
-  for(arma::uword i=0; i<positions.n_cols; i++) {
+#pragma omp parallel for
+  for (arma::uword i = 0; i < positions.n_cols; i++) {
     const arma::vec point_i = positions.col(i);
     result(i) = function.at(point_i);
   }
@@ -43,6 +43,21 @@ auto derivative(const Function & function, const arma::uvec & index) {
 
   return result;
 }
+
+template<typename Operator, typename State, typename Potential>
+OperatorWrapper<Operator, State, Potential>
+    normalise = [](const Operator &,
+                   const Potential &) -> Propagator<State> {
+  if (!has_normalise<State, State(void)>::value) {
+    throw Error(
+        "The State object does not contain .normalise() member function, "
+        "thus unable to normalise"
+    );
+  }
+  return [](const State & state, const double dt) -> State {
+    return state.normalise();
+  };
+};
 
 
 #endif //UTIL_MEMBER_FUNCTION_WRAPPER_H
