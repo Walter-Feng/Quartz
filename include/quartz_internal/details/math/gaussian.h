@@ -192,15 +192,20 @@ struct Gaussian {
     const arma::mat this_A = arma::inv(this->covariance);
     const arma::mat B_A = arma::inv(B.covariance);
 
-    const arma::mat new_covariance = arma::inv(this_A + B_A);
+    const arma::mat A_sum = this_A + B_A;
+    const arma::mat new_covariance = arma::inv(A_sum);
 
     const arma::Col<std::common_type_t<T, U>> new_mean =
         new_covariance * (this_A * this->center + B_A * B.center);
 
+    const std::common_type_t<T, U> new_coef =
+        std::exp(-0.5 * (arma::dot(this->center, this_A * this->center)
+        + arma::dot(B.center, B_A * B.center)
+        - arma::dot(new_mean, A_sum * new_mean))) * this->coef * B.coef;
     return
         Gaussian<std::common_type_t<T, U>>(new_covariance,
                                            new_mean,
-                                           this->coef * B.coef);
+                                           new_coef);
   }
 
 };
@@ -305,11 +310,13 @@ struct GaussianWithPoly {
       throw Error("Derivative operator out of bound");
     }
 
+    const arma::mat inv_covariance = arma::inv(this->gaussian.covariance);
+    const arma::Col<T> B = inv_covariance * this->gaussian.center;
 
     const Polynomial<T> contribution_from_gaussian =
-        Polynomial<T>(-this->gaussian.covariance.col(index),
-                      arma::eye<lmat>(this->dim(), this->dim())) +
-        this->gaussian.center(index);
+        (Polynomial<T>(-inv_covariance.col(index),
+                       arma::eye<lmat>(this->dim(), this->dim())) + B(index))
+        * this->polynomial;
 
     return GaussianWithPoly<T>(
         this->polynomial.derivative(index) + contribution_from_gaussian,

@@ -32,6 +32,27 @@ using OperatorWrapper = std::function<
     Propagator<State>(const Operator &, const Potential &)
 >;
 
+template<typename Operator,
+    typename State,
+    typename Potential>
+OperatorWrapper<Operator, State, Potential>
+operator<<(const OperatorWrapper<Operator, State, Potential> & A,
+           const OperatorWrapper<Operator, State, Potential> & B) {
+
+  //return in the form of OperatorWrapper
+  return [&A, &B](const Operator & op, const Potential & potential)
+      -> Propagator<State> {
+
+    const auto a = A(op, potential);
+    const auto b = B(op, potential);
+
+    //OperatorWrapper requires returning of Propagator
+    return [&a, &b](const State & state,
+                    const double dt) -> State {
+      return b(a(state, dt), dt);
+    };
+  };
+}
 
 //TODO(Rui): Check if printer can be constant
 // when the printer is going to change the value of,
@@ -86,7 +107,7 @@ propagate(const State & initial_state,
     const Propagator<State> propagator =
         operator_wrapper(op, potential);
 
-    for(arma::uword i = 1; i <= steps; i++) {
+    for (arma::uword i = 1; i <= steps; i++) {
       state = propagator(state, dt);
       printer(state, i, i * dt, print_level, false);
     }

@@ -121,13 +121,13 @@ auto moyal_bracket(const Functor & post_functor,
 
   const auto poisson_op = details::polynomial_poisson_operator(dim);
 
-  auto result = details::poisson_operate(poisson_op, a, h);
+  auto result = post_functor(details::poisson_operate(poisson_op, a, h));
   for (arma::uword i = 1; i < cut_off; i++) {
     result = result +
-             details::poisson_operate(
-                 std::pow(-1, i) / factorial(2 * i + 1) / std::pow(2, 2 * i)
-                 * poisson_op.pow(2 * i + 1),
-                 a, h);
+             post_functor(details::poisson_operate(
+                 poisson_op.pow(2 * i + 1) * (std::pow(-1, i) /
+                 factorial(2 * i + 1) / std::pow(2, 2 * i)),
+                 a, h));
   }
 
   return result;

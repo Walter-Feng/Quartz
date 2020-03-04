@@ -27,11 +27,6 @@ TEST_CASE("Moyal Bracket") {
 
     CHECK(moyal_bracket(p, h2, 3).coefs(0) == -1);
     CHECK(moyal_bracket(p, h2, 3).indices(0,0) == 1);
-
-    const auto quadraic_potential = Polynomial<double>(arma::vec{0.25}, lvec{4});
-    const auto h4 = hamiltonian(quadraic_potential);
-    std::cout << moyal_bracket(p2, h4, 5).coefs.t();
-    std::cout << moyal_bracket(p2, h4, 5).indices;
   }
 }
 
