@@ -1,6 +1,6 @@
 // name your method
-#ifndef METHOD_DVR_H
-#define METHOD_DVR_H
+#ifndef METHODS_DVR_H
+#define METHODS_DVR_H
 
 // include only the necessary header files
 #include "quartz_internal/propagate.h"
@@ -288,4 +288,4 @@ public:
 } // namespace dvr
 }
 
-#endif //METHOD_DVR_H
+#endif //METHODS_DVR_H

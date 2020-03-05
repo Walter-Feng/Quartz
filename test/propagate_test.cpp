@@ -101,8 +101,8 @@ TEST_CASE("Propagate") {
 
     const auto initial_state =
         method::fgb::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
-                              arma::uvec{30,30},
-                              arma::mat{{-5, 5},{-5,5}},
+                              arma::uvec{10,10},
+                              arma::mat{{-3, 3},{-3,3}},
                               1);
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
@@ -120,6 +120,41 @@ TEST_CASE("Propagate") {
                                   wrapper,
                                   harmonic_potential,
                                   generic_printer<method::fgb::State>, 10, dt,
+                                  2);
+
+
+  }
+
+  SECTION("Wigner Dynamics") {
+
+    const double dt = 0.01;
+
+    const method::wd::State initial_state =
+        method::wd::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
+                          arma::uvec{30,30},
+                          arma::mat{{-5, 5},{-5,5}});
+
+    const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
+                                                             lmat{2});
+
+    const auto wrapped_initial =
+        math::GaussianWithPoly(
+            math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform()
+            );
+
+    const auto op = method::wd::Operator(initial_state, wrapped_initial, harmonic_potential);
+
+    const auto wrapper =
+        math::runge_kutta_4<method::wd::Operator<math::Polynomial<double>,
+                            math::GaussianWithPoly<double>>,
+            method::wd::State,
+            math::Polynomial<double>>;
+
+    const auto result = propagate(initial_state,
+                                  op,
+                                  wrapper,
+                                  harmonic_potential,
+                                  generic_printer<method::wd::State>, 10, dt,
                                   2);
 
 

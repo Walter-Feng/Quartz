@@ -1,5 +1,5 @@
-#ifndef QUARTZ_FIXED_GAUSSIAN_BASIS_H
-#define QUARTZ_FIXED_GAUSSIAN_BASIS_H
+#ifndef METHODS_FIXED_GAUSSIAN_BASIS_H
+#define METHODS_FIXED_GAUSSIAN_BASIS_H
 
 #include "quartz_internal/util/auto_generator.h"
 
@@ -319,4 +319,4 @@ public:
 } // namespace fgb
 }
 
-#endif //QUARTZ_FIXED_GAUSSIAN_BASIS_H
+#endif //METHODS_FIXED_GAUSSIAN_BASIS_H

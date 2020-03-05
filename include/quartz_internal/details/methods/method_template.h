@@ -1,6 +1,6 @@
 // name your method
-#ifndef METHOD_METHOD_TEMPLATE_H
-#define METHOD_METHOD_TEMPLATE_H
+#ifndef METHODS_METHOD_TEMPLATE_H
+#define METHODS_METHOD_TEMPLATE_H
 
 // include only the necessary header files
 #include "quartz_internal/propagate.h"
@@ -129,4 +129,4 @@ public:
 
 }
 
-#endif //METHOD_METHOD_TEMPLATE_H
+#endif //METHODS_METHOD_TEMPLATE_H
