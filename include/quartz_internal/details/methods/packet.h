@@ -209,7 +209,9 @@ public:
       auto p_variable = math::Polynomial<double>(2 * state.dim(), 1.0);
       p_variable.indices(state.dim() + i, 0) = 1;
       const auto p_moyal_bracket =
-          math::moyal_bracket(p_variable, hamiltonian(potential), p_variable.grade());
+          math::moyal_bracket(p_variable,
+                              hamiltonian(potential, state.masses),
+                              p_variable.grade());
       for (arma::uword j = 0; j < momentum_change.n_cols; j++) {
         momentum_change(i,j) =
             state.packet(j).expectation(p_moyal_bracket);

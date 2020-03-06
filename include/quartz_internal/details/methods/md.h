@@ -1,5 +1,5 @@
-#ifndef QUARTZ_MD_H
-#define QUARTZ_MD_H
+#ifndef METHODS_MD_H
+#define METHODS_MD_H
 
 namespace method {
 // use your method name to create a subspace for your
@@ -160,4 +160,4 @@ public:
 }
 
 
-#endif //QUARTZ_MD_H
+#endif //METHODS_MD_H

@@ -1,5 +1,5 @@
-#ifndef QUARTZ_FIXED_GAUSSIAN_BASIS_H
-#define QUARTZ_FIXED_GAUSSIAN_BASIS_H
+#ifndef METHODS_FIXED_GAUSSIAN_BASIS_H
+#define METHODS_FIXED_GAUSSIAN_BASIS_H
 
 #include "quartz_internal/util/auto_generator.h"
 
@@ -204,7 +204,7 @@ public:
   inline
   State normalise() const {
     return State(this->points,
-                 arma::normalise(this->weights),
+                 this->weights / arma::sum(this->weights),
                  this->overlap,
                  this->covariances,
                  this->masses);
@@ -281,27 +281,22 @@ public:
 
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
-      hamiltonian(quartz::hamiltonian(potential)) {
+      hamiltonian(quartz::hamiltonian(potential, state.masses)) {
 
     const arma::uword total = state.covariances.n_slices;
     arma::mat f(total, total, arma::fill::zeros);
 
 #pragma omp parallel for
     for (arma::uword i = 0; i < total; i++) {
-      for (arma::uword j = i+1; j < total; j++) {
+      for (arma::uword j = i + 1; j < total; j++) {
         const auto gaussian_i = math::GaussianWithPoly(state.packet(i));
         const auto gaussian_j = math::GaussianWithPoly(state.packet(j));
 
-        const auto post_functor =
-            [&gaussian_j](const math::GaussianWithPoly<double> & b) -> double {
-              const auto multiplied = gaussian_j * b;
-              return multiplied.integral();
-            };
+        const auto moyal = moyal_bracket(gaussian_i,
+                                         this->hamiltonian,
+                                         this->hamiltonian.grade() / 2);
 
-        f(i, j) = moyal_bracket(post_functor,
-                                gaussian_i,
-                                this->hamiltonian,
-                                this->hamiltonian.grade());
+        f(i,j) = (moyal * gaussian_j).integral();
       }
     }
 
@@ -324,4 +319,4 @@ public:
 } // namespace fgb
 }
 
-#endif //QUARTZ_FIXED_GAUSSIAN_BASIS_H
+#endif //METHODS_FIXED_GAUSSIAN_BASIS_H

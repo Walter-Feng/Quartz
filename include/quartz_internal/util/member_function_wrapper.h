@@ -48,12 +48,6 @@ template<typename Operator, typename State, typename Potential>
 OperatorWrapper<Operator, State, Potential>
     normalise = [](const Operator &,
                    const Potential &) -> Propagator<State> {
-  if (!has_normalise<State, State(void)>::value) {
-    throw Error(
-        "The State object does not contain .normalise() member function, "
-        "thus unable to normalise"
-    );
-  }
   return [](const State & state, const double dt) -> State {
     return state.normalise();
   };

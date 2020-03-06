@@ -113,7 +113,9 @@ target_link_libraries(test_utils catch2 quartz)
 add_executable(test_methods
         test/details/methods/dvr_test.cpp
         test/details/methods/md_test.cpp
-        test/details/methods/fixed_gaussian_basis_test.cpp)
+        test/details/methods/fixed_gaussian_basis_test.cpp
+        test/details/methods/wd_test.cpp
+        test/details/methods/dmd_test.cpp)
 
 target_link_libraries(test_methods catch2 quartz)
 

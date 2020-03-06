@@ -40,16 +40,17 @@ operator<<(const OperatorWrapper<Operator, State, Potential> & A,
            const OperatorWrapper<Operator, State, Potential> & B) {
 
   //return in the form of OperatorWrapper
-  return [&A, &B](const Operator & op, const Potential & potential)
+  return [A, B](const Operator & op, const Potential & potential)
       -> Propagator<State> {
 
-    const auto a = A(op, potential);
-    const auto b = B(op, potential);
+    const Propagator<State> a = A(op, potential);
+    const Propagator<State> b = B(op, potential);
 
     //OperatorWrapper requires returning of Propagator
-    return [&a, &b](const State & state,
+    return [a, b](const State state,
                     const double dt) -> State {
-      return b(a(state, dt), dt);
+      const State intermediate_state = a(state, dt);
+      return b(intermediate_state, dt);
     };
   };
 }
@@ -86,7 +87,7 @@ propagate(const State & initial_state,
     State state = initial_state;
 
     for (arma::uword i = 1; i <= steps; i++) {
-      state = std::move(propagator(state, dt));
+      state = propagator(state, dt);
       printer(state, i, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
@@ -108,7 +109,7 @@ propagate(const State & initial_state,
         operator_wrapper(op, potential);
 
     for (arma::uword i = 1; i <= steps; i++) {
-      state = propagator(state, dt);
+      state = std::move(propagator(state, dt));
       printer(state, i, i * dt, print_level, false);
     }
 
