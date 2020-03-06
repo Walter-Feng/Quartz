@@ -8,10 +8,11 @@ namespace dmd {
 
 namespace details {
 
-template<typename Initial, typename Potential>
+template<typename Potential>
 arma::mat effective_force(const Potential & potential,
-                          const Initial & initial,
-                          const arma::mat & points) {
+                          const arma::mat & points,
+                          const arma::vec & masses,
+                          const double beta) {
   arma::mat result = arma::mat(points.n_rows / 2, points.n_cols);
 
 #pragma omp parallel for
@@ -20,11 +21,15 @@ arma::mat effective_force(const Potential & potential,
     const arma::vec position = points.col(i).rows(0, points.n_rows / 2 - 1);
     for (arma::uword j = 0; j < points.n_rows / 2; j++) {
       const auto p_j = j + points.n_rows / 2;
+      math::Polynomial<double> correction_term =
+          math::Polynomial<double>(points.n_rows,std::pow(beta / masses(j), 2));
+      correction_term.indices(p_j,0) = 2;
+
       result(j, i) = -potential.derivative(j).at(position)
                      + potential.derivative(j).derivative(j).derivative(j).at(
           position)
-                       * initial.derivative(p_j).derivative(p_j).at(point)
-                       / initial.at(point) / 24.0;
+                       * (correction_term - beta / masses(j)).at(
+                           point) / 24.0;
     }
   }
 
@@ -36,7 +41,7 @@ arma::mat effective_force(const Potential & potential,
 using State = md::State;
 
 
-template<typename Potential, typename Initial>
+template<typename Potential>
 struct Operator {
 
 private:
@@ -44,13 +49,13 @@ private:
 
 public:
   Potential potential;
-  Initial initial;
+  double beta;
 
   Operator(const State & state,
-           const Initial & initial,
-           const Potential & potential) :
+           const Potential & potential,
+           const double beta = 1.0) :
       potential(potential),
-      initial(initial) {}
+      beta(beta){}
 
 
   inline
@@ -65,9 +70,10 @@ public:
 
     const arma::mat change_list =
         arma::join_cols(p_submatrix,
-                        details::effective_force(potential,
-                                                 this->initial,
-                                                 state.points));
+                        details::effective_force(this->potential,
+                                                 state.points,
+                                                 state.masses,
+                                                 this->beta));
 
     return State(change_list, state.weights, state.masses);
   }

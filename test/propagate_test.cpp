@@ -172,16 +172,10 @@ TEST_CASE("Propagate") {
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
                                                              lmat{2});
 
-    const auto wrapped_initial =
-        math::GaussianWithPoly(
-            math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform()
-        );
-
-    const auto op = method::dmd::Operator(initial_state, wrapped_initial, harmonic_potential);
+    const auto op = method::dmd::Operator(initial_state, harmonic_potential);
 
     const auto wrapper =
-        math::runge_kutta_4<method::dmd::Operator<math::Polynomial<double>,
-            math::GaussianWithPoly<double>>,
+        math::runge_kutta_4<method::dmd::Operator<math::Polynomial<double>>,
             method::dmd::State,
             math::Polynomial<double>>;
 

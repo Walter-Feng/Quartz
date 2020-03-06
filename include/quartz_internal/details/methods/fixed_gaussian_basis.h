@@ -281,7 +281,7 @@ public:
 
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
-      hamiltonian(quartz::hamiltonian(potential)) {
+      hamiltonian(quartz::hamiltonian(potential, state.masses)) {
 
     const arma::uword total = state.covariances.n_slices;
     arma::mat f(total, total, arma::fill::zeros);
@@ -294,7 +294,7 @@ public:
 
         const auto moyal = moyal_bracket(gaussian_i,
                                          this->hamiltonian,
-                                         this->hamiltonian.grade());
+                                         this->hamiltonian.grade() / 2);
 
         f(i,j) = (moyal * gaussian_j).integral();
       }

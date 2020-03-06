@@ -22,12 +22,10 @@ TEST_CASE("DMD Test") {
         arma::vec{1.});
 
     const auto test_operator = dmd::Operator(test_state,
-                                            GaussianWithPoly(
-                                                real_space.wigner_transform()),
                                             potential);
 
     const Propagator<dmd::State> propagator =
-        runge_kutta_4<dmd::Operator<Polynomial<double>, GaussianWithPoly<double>>,
+        runge_kutta_4<dmd::Operator<Polynomial<double>>,
             dmd::State,
             Polynomial<double>>
             (test_operator, potential);

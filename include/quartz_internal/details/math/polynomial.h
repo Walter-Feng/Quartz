@@ -415,15 +415,7 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator-(const U B) const {
-
-    const lvec dummy_indices = arma::zeros<lvec>(
-        this->indices.n_rows);
-    const lmat new_indices = arma::join_rows(this->indices,
-                                             dummy_indices);
-    const arma::Col<std::common_type_t<T, U>>
-        new_coefs = arma::join_cols(this->coefs, -B);
-
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return *this + (-B);
   }
 
   template<typename U>
