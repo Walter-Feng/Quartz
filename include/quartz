@@ -42,6 +42,7 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/methods/fixed_gaussian_basis.h"
 #include "quartz_internal/details/methods/wd.h"
 #include "quartz_internal/details/methods/dmd.h"
+#include "quartz_internal/details/methods/cwa_smd.h"
 // #include "quartz_internal/details/methods/method_template.h"
 
 //utils

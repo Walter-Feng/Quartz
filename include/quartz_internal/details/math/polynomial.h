@@ -36,6 +36,11 @@ struct Term {
     return this->coef * result;
   }
 
+  inline
+  Term() :
+  coef(0.0),
+  indices() {}
+
   explicit
   inline
   Term(const arma::uword dim, const T coef = T(0.0)) :
@@ -46,6 +51,11 @@ struct Term {
   Term(const T coef, const lvec & indices) :
       coef(coef),
       indices(indices) {}
+
+  inline
+  Term(const T coef, const arma::uvec & indices) :
+      coef(coef),
+      indices(arma::conv_to<lvec>::from(indices)) {}
 
   arma::uword dim() const {
     return this->indices.n_elem;
@@ -137,6 +147,12 @@ public:
 
   arma::Col<T> coefs;
   lmat indices;
+
+  inline
+  Polynomial() :
+  coefs(),
+  indices() {}
+
 
   explicit
   inline
