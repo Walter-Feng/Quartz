@@ -39,6 +39,7 @@ auto at_search(const math::polynomial::Term <T> & term,
                const arma::vec & expectations,
                const arma::uvec & table,
                const arma::uword grade) {
+
   if ((arma::uword) arma::max(term.indices) >= grade) {
     return expectation(term, points, weights);
   } else {
@@ -102,8 +103,8 @@ public:
       throw Error("Different dimension between the grid and the masses");
     }
 
-    const auto dimension = grid.n_elem;
-    const auto length = dimension * grade;
+    const arma::uword dimension = grid.n_elem;
+    const arma::uword length = std::pow(grade,dimension);
 
     this->expectations = arma::vec(length);
     this->positional_indices = arma::uvec(dimension / 2);
