@@ -36,6 +36,11 @@ struct Term {
     return this->coef * result;
   }
 
+  inline
+  Term() :
+  coef(0.0),
+  indices() {}
+
   explicit
   inline
   Term(const arma::uword dim, const T coef = T(0.0)) :
@@ -47,6 +52,11 @@ struct Term {
       coef(coef),
       indices(indices) {}
 
+  inline
+  Term(const T coef, const arma::uvec & indices) :
+      coef(coef),
+      indices(arma::conv_to<lvec>::from(indices)) {}
+
   arma::uword dim() const {
     return this->indices.n_elem;
   }
@@ -54,7 +64,7 @@ struct Term {
   template<typename U>
   Term<std::common_type_t<T, U>>
   scale(const arma::Col<U> & scaling) const {
-    return this->at(scaling) / this->coef * (*this);
+    return {this->at(scaling), this->indices};
   }
 
   template<typename U>
@@ -138,6 +148,12 @@ public:
   arma::Col<T> coefs;
   lmat indices;
 
+  inline
+  Polynomial() :
+  coefs(),
+  indices() {}
+
+
   explicit
   inline
   Polynomial(const arma::uword dim, const T coef = 0.0) :
@@ -187,7 +203,6 @@ public:
     }
     Polynomial<T> result = Polynomial<T>(this->term(0).derivative(index));
 
-#pragma omp parallel for
     for (arma::uword i = 1; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).derivative(index);
     }
@@ -277,13 +292,9 @@ public:
     return result;
   }
 
-  template<typename U>
-  Polynomial<std::common_type_t<T, U>>
-  scale(const arma::vec & scaling) const {
-    auto result = Polynomial<std::common_type_t<T, U>>(
-        this->term(0).scale(scaling));
+  Polynomial<T> scale(const arma::vec & scaling) const {
+    auto result = Polynomial<T>(this->term(0).scale(scaling));
 
-#pragma omp parallel for
     for (arma::uword i = 1; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).scale(scaling);
     }
