@@ -25,9 +25,12 @@ arma::mat force(const Potential & potential,
 template<typename Function>
 auto expectation(const Function & function,
                  const arma::mat & points,
-                 const arma::vec & weights) {
+                 const arma::vec & weights,
+                 const arma::vec & scaling) {
 
-  auto result = at(function, points);
+  const arma::mat scaled_points = arma::diagmat(1 / scaling) * points;
+
+  auto result = at(function, scaled_points);
 
   return arma::dot(result, weights) / arma::sum(weights);
 }
@@ -38,10 +41,11 @@ auto at_search(const math::polynomial::Term <T> & term,
                const arma::vec & weights,
                const arma::vec & expectations,
                const arma::uvec & table,
+               const arma::vec & scaling,
                const arma::uword grade) {
 
   if ((arma::uword) arma::max(term.indices) >= grade) {
-    return expectation(term, points, weights);
+    return expectation(term, points, weights, scaling);
   } else {
     const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.indices);
 
@@ -56,14 +60,15 @@ auto at_search(const math::Polynomial <T> & polynomial,
                const arma::vec & weights,
                const arma::vec & expectations,
                const arma::uvec & table,
+               const arma::vec & scaling,
                const arma::uword grade) {
 
   auto result = at_search(polynomial.term(0), points, weights, expectations,
-                          table, grade);
+                          table, scaling, grade);
 
   for (arma::uword i = 1; i < polynomial.coefs.n_elem; i++) {
     result += at_search(polynomial.term(i), points, weights, expectations,
-                        table, grade);
+                        table, scaling, grade);
   }
 
   return result;
@@ -82,6 +87,7 @@ public:
   arma::vec expectations;
   arma::uvec positional_indices;
   arma::uvec momentum_indices;
+  arma::vec scaling;
 
   // Establish an easy way to construct your State
   template<typename PhaseSpaceDistribution>
@@ -104,11 +110,15 @@ public:
     }
 
     const arma::uword dimension = grid.n_elem;
-    const arma::uword length = std::pow(grade,dimension);
+    const arma::uword length = std::pow(grade, dimension);
 
     this->expectations = arma::vec(length);
     this->positional_indices = arma::uvec(dimension / 2);
     this->momentum_indices = arma::uvec(dimension / 2);
+
+    const arma::vec ranges = range.col(1) - range.col(0);
+    this->scaling = ranges;
+
 
     // indices check in
 #pragma omp parallel for
@@ -130,9 +140,9 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      this->expectations(i) = details::expectation(math::polynomial::Term(1.0,
-                                                                          indices),
-                                                   this->points, this->weights);
+      this->expectations(i) =
+          details::expectation(math::polynomial::Term(1.0, indices),
+                               this->points, this->weights, this->scaling);
     }
   }
 
@@ -155,11 +165,14 @@ public:
     }
 
     const auto dimension = grid.n_elem;
-    const auto length = std::pow(grade,dimension);
+    const auto length = std::pow(grade, dimension);
 
     this->expectations = arma::vec(length);
     this->positional_indices = arma::uvec(dimension / 2);
     this->momentum_indices = arma::uvec(dimension / 2);
+
+    const arma::vec ranges = range.col(1) - range.col(0);
+    this->scaling = ranges;
 
     // indices check in
     for (arma::uword i = 0; i < dimension / 2; i++) {
@@ -179,9 +192,9 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      this->expectations(i) = details::expectation(math::polynomial::Term(1.0,
-                                                                          indices),
-                                                   this->points, this->weights);
+      this->expectations(i) =
+          details::expectation(math::polynomial::Term(1.0, indices),
+                               this->points, this->weights, this->scaling);
     }
   }
 
@@ -193,6 +206,7 @@ public:
         const arma::vec & expectations,
         const arma::uvec & positional_indices,
         const arma::uvec & momentum_indices,
+        const arma::vec & scaling,
         const arma::uword grade) :
       points(points),
       weights(weights),
@@ -201,7 +215,8 @@ public:
       expectation_table(expectation_table),
       expectations(expectations),
       positional_indices(positional_indices),
-      momentum_indices(momentum_indices) {}
+      momentum_indices(momentum_indices),
+      scaling(scaling) {}
 
   inline
   State(const State & state) :
@@ -212,7 +227,8 @@ public:
       expectation_table(state.expectation_table),
       expectations(state.expectations),
       positional_indices(state.positional_indices),
-      momentum_indices(state.momentum_indices) {}
+      momentum_indices(state.momentum_indices),
+      scaling(state.scaling) {}
 
   inline
   arma::uword dim() const {
@@ -231,15 +247,17 @@ public:
   arma::vec positional_expectation() const {
 
     const arma::vec result = this->expectations(this->positional_indices);
+    const arma::vec scale = this->scaling.rows(0,this->dim() - 1);
 
-    return result;
+    return result * scale;
   }
 
   inline
   arma::vec momentum_expectation() const {
     const arma::vec result = this->expectations(this->momentum_indices);
+    const arma::vec scale = this->scaling.rows(this->dim(), 2 * this->dim() - 1);
 
-    return result;
+    return result * scale;
   }
 
   State operator+(const State & B) const {
@@ -271,6 +289,7 @@ public:
                               this->weights,
                               this->expectations,
                               this->expectation_table,
+                              this->scaling,
                               this->grade);
   }
 };
@@ -285,14 +304,14 @@ public:
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
       potential(potential),
-      H(hamiltonian(potential, state.masses)),
+      H(hamiltonian(potential, state.masses).scale(state.scaling)),
       operators() {
+
     std::vector<math::Polynomial<double>>
         op(std::pow(state.grade, state.dim() * 2));
 
     op[0] = math::Polynomial<double>(state.dim() * 2);
 
-#pragma omp parallel for
     for (arma::uword i = 1; i < op.size(); i++) {
       const auto observable =
           math::Polynomial(math::polynomial::Term<double>(1.0,
@@ -300,9 +319,10 @@ public:
                                                               i,
                                                               state.expectation_table)));
 
-      const auto cut_off = std::min(observable.grade(), H.grade());
-      const auto moyal = moyal_bracket(math::Polynomial(observable), H,
-                                       cut_off);
+      const arma::uword cut_off = std::min(observable.grade(), H.grade()) / 2;
+      const auto moyal =
+          moyal_bracket(math::Polynomial(observable), H, state.scaling,
+                        cut_off);
 
       op[i] = moyal;
     }
@@ -337,6 +357,7 @@ public:
                              state.weights,
                              state.expectations,
                              state.expectation_table,
+                             state.scaling,
                              state.grade);
     }
 
@@ -347,6 +368,7 @@ public:
                  expectation_change_list,
                  state.positional_indices,
                  state.momentum_indices,
+                 state.scaling,
                  state.grade);
   }
 

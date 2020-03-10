@@ -11,7 +11,13 @@ namespace math {
 namespace details {
 
 inline
-Polynomial<double> polynomial_poisson_operator(arma::uword n_real_space_dim) {
+Polynomial<double> polynomial_poisson_operator(
+    const arma::vec & scaling,
+    arma::uword n_real_space_dim) {
+
+  if (scaling.n_elem != n_real_space_dim * 2) {
+    throw Error("Scaling factor has different dimension required");
+  }
 
   Polynomial<double> poisson_operator(n_real_space_dim * 4);
 
@@ -37,13 +43,15 @@ Polynomial<double> polynomial_poisson_operator(arma::uword n_real_space_dim) {
     px(space::indices_to_index(arma::uvec{i, 0, 1},
                                table)) = 1; // set the d_x operator to the right function
 
-    result = result + polynomial::Term<double>(1, xp) +
-             polynomial::Term<double>(-1, px);
+    const double coef = 1.0 / scaling(i) / scaling(i + n_real_space_dim);
+    result = result + polynomial::Term<double>(coef, xp) +
+             polynomial::Term<double>(-coef, px);
   }
 
   return result;
 
 }
+
 
 template<typename A, typename H>
 auto poisson_operate(const Polynomial<double> & poisson_operator,
@@ -56,9 +64,9 @@ auto poisson_operate(const Polynomial<double> & poisson_operator,
 
   const arma::uword dim = poisson_operator.dim() / 4;
 
-  const auto differentiate = [&dim](const polynomial::Term<double> & term,
-                                    const A & a,
-                                    const H & h) {
+  const auto differentiate = [dim](const polynomial::Term<double> & term,
+                                   const A & a,
+                                   const H & h) {
     return
         polynomial::Term<double>(term.coef, term.indices(
             arma::span(0, dim * 2 - 1))).differentiate(a)
@@ -77,7 +85,10 @@ auto poisson_operate(const Polynomial<double> & poisson_operator,
 }
 
 template<typename A, typename H>
-auto moyal_bracket(const A & a, const H & h, const arma::uword cut_off) {
+auto moyal_bracket(const A & a,
+                   const H & h,
+                   const arma::vec & scaling,
+                   const arma::uword cut_off) {
 
   if (a.dim() != h.dim()) {
     throw Error("Different dimension between the operator and the hamiltonian");
@@ -89,7 +100,7 @@ auto moyal_bracket(const A & a, const H & h, const arma::uword cut_off) {
 
   const auto dim = a.dim() / 2;
 
-  const auto poisson_op = details::polynomial_poisson_operator(dim);
+  const auto poisson_op = details::polynomial_poisson_operator(scaling, dim);
 
   auto result = details::poisson_operate(poisson_op, a, h);
   for (arma::uword i = 1; i < cut_off; i++) {
@@ -103,35 +114,14 @@ auto moyal_bracket(const A & a, const H & h, const arma::uword cut_off) {
   return result;
 }
 
-template<typename A, typename Functor, typename H>
-auto moyal_bracket(const Functor & post_functor,
-                   const A & a,
+template<typename A, typename H>
+auto moyal_bracket(const A & a,
                    const H & h,
                    const arma::uword cut_off) {
-
-  if (a.dim() != h.dim()) {
-    throw Error("Different dimension between the operator and the hamiltonian");
-  }
-
-  if (a.dim() % 2 != 0) {
-    throw Error("The operator provided is not likely in the phase space form");
-  }
-
-  const auto dim = a.dim() / 2;
-
-  const auto poisson_op = details::polynomial_poisson_operator(dim);
-
-  auto result = post_functor(details::poisson_operate(poisson_op, a, h));
-  for (arma::uword i = 1; i < cut_off; i++) {
-    result = result +
-             post_functor(details::poisson_operate(
-                 poisson_op.pow(2 * i + 1) * (std::pow(-1, i) /
-                 factorial(2 * i + 1) / std::pow(2, 2 * i)),
-                 a, h));
-  }
-
-  return result;
+  return moyal_bracket(a, h, arma::ones<arma::vec>(a.dim()), cut_off);
 }
+
+
 
 }
 
