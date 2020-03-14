@@ -3,6 +3,32 @@
 
 #include "util/check_member.h"
 
+template<typename T>
+auto print(const arma::Mat<T> & arma,
+           const int width = 10,
+           const int precision = 6,
+           const std::string aligned = ">") {
+  for (arma::uword i = 0; i < arma.n_rows; i++) {
+    for (arma::uword j = 0; j < arma.n_cols; j++) {
+      const auto formatted =
+          fmt::format("{:.{}}", arma(i, j), precision);
+      fmt::print("{:" + aligned + "{}}", formatted, width);
+    }
+    fmt::print("\n");
+  }
+}
+
+template<typename T>
+auto print(const T number,
+           const int width = 10,
+           const int precision = 6,
+           const std::string aligned = ">") {
+  const auto formatted =
+      fmt::format("{:.{}}", number, precision);
+  fmt::print("{:" + aligned + "{}}", formatted, width);
+}
+
+
 template<typename State>
 using Printer = std::function<void(const State & state,
                                    const arma::uword index,
@@ -32,22 +58,23 @@ Printer<State> generic_printer = [](const State & state,
   if (print_level == 1) {
     const arma::vec real_space_expectation = state.positional_expectation();
     if (print_header) {
-      std::cout << std::setw(6) << "Step |";
-      std::cout << std::setw(width) << "Time |";
-      std::cout << std::setw(width * real_space_expectation.n_elem)
-                << "Positional |" << std::endl;
+      fmt::print("{:>{}}", "Step |", 6);
+      fmt::print("{:>{}}", "Time |", width);
+      fmt::print("{:>{}}", "Positional |",
+                 width * real_space_expectation.n_elem);
+      fmt::print("\n");
       for (arma::uword i = 0;
            i < 6 + width * (real_space_expectation.n_elem + 1); i++) {
-        std::cout << "=";
+        fmt::print("=");
       }
-      std::cout << std::endl;
+      fmt::print("\n");
     }
 
-    std::cout << std::setw(6) << index;
-    std::cout << std::setw(width) << std::setprecision(precision);
+    fmt::print("{:>{}}", index, 6);
 
-    arma::join_rows(arma::vec{time}, real_space_expectation.t()).raw_print(
-        std::cout);
+    const arma::mat combined =
+        arma::join_rows(arma::vec{time}, real_space_expectation.t());
+    print(combined, width, precision);
   }
 
   if (print_level >= 2) {
@@ -60,26 +87,28 @@ Printer<State> generic_printer = [](const State & state,
     const arma::vec momentum_expectation = state.momentum_expectation();
 
     if (print_header) {
-      std::cout << std::setw(6) << "Step |";
-      std::cout << std::setw(width) << "Time |";
-      std::cout << std::setw(width * real_space_expectation.n_elem)
-                << "Positional |";
-      std::cout << std::setw(width * momentum_expectation.n_elem)
-                << "Momentum |";
-      std::cout << std::endl;
-      for (arma::uword i = 0; i < 6 + width * (real_space_expectation.n_elem + 1) +
-                                  width * momentum_expectation.n_elem; i++) {
-        std::cout << "=";
+      fmt::print("Step |");
+      fmt::print("{:>{}}", "Time |", width);
+      fmt::print("{:>{}}", "Positional |",
+                 width * real_space_expectation.n_elem);
+      fmt::print("{:>{}}", "Positional |", width * momentum_expectation.n_elem);
+      fmt::print("\n");
+      for (arma::uword i = 0;
+           i < 6 + width * (real_space_expectation.n_elem + 1) +
+               width * momentum_expectation.n_elem; i++) {
+        fmt::print("=");
       }
-      std::cout << std::endl;
+      fmt::print("\n");
     }
 
-    std::cout << std::setw(6) << index;
+    fmt::print("{:>{}}", index, 6);
 
-    std::cout << std::setw(width) << std::setprecision(precision);
-    arma::join_rows(arma::vec{time}, arma::join_rows(real_space_expectation.t(),
-                                                     momentum_expectation.t())).raw_print(
-        std::cout);
+    const arma::mat combined =
+        arma::join_rows(arma::vec{time},
+                        arma::join_rows(real_space_expectation.t(),
+                                        momentum_expectation.t()));
+
+    print(combined, width, precision);
   }
 
 };
