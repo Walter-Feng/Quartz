@@ -70,6 +70,19 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
         DESTINATION include
         FILES_MATCHING PATTERN "quartz")
 
+
+################################
+#  Compile external libraries  #
+################################
+
+
+#######Catch2#######
+
+add_library(catch2 SHARED external/Catch2/Catch_main.cpp)
+include_directories("external/Catch2")
+target_include_directories(catch2 PUBLIC external/Catch2/)
+
+
 ########fmt#########
 
 add_subdirectory(external/fmt)
@@ -77,18 +90,17 @@ include_directories("external/fmt/include")
 target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
 
+
+########args#########
+
+add_subdirectory(external/args)
+include_directories("external/args")
+target_link_libraries(quartz args)
+add_definitions(-DHAVE_ARGS)
+
 ####################
 #       Test       #
 ####################
-
-
-####################
-#      Catch2      #
-####################
-
-add_library(catch2 SHARED external/Catch2/Catch_main.cpp)
-include_directories("external/Catch2")
-target_include_directories(catch2 PUBLIC external/Catch2/)
 
 add_executable(test_core
         test/printer_test.cpp
