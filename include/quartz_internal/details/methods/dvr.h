@@ -1,6 +1,6 @@
 // name your method
-#ifndef METHOD_DVR_H
-#define METHOD_DVR_H
+#ifndef METHODS_DVR_H
+#define METHODS_DVR_H
 
 // include only the necessary header files
 #include "quartz_internal/propagate.h"
@@ -102,7 +102,7 @@ public:
         const arma::mat & range,
         const arma::vec & masses) :
       points(math::space::points_generate(grid, range)),
-      coefs(at(initial, points)),
+      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
       grid(grid),
       ranges(range),
       masses(masses),
@@ -122,7 +122,7 @@ public:
         const arma::uvec & grid,
         const arma::mat & range) :
       points(math::space::points_generate(grid, range)),
-      coefs(at(initial, points)),
+      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
       grid(grid),
       ranges(range),
       masses(arma::ones<arma::vec>(arma::prod(grid))),
@@ -288,4 +288,4 @@ public:
 } // namespace dvr
 }
 
-#endif //METHOD_DVR_H
+#endif //METHODS_DVR_H

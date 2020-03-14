@@ -10,7 +10,7 @@ TEST_CASE("DVR Test") {
   SECTION("One Dimension") {
 
     const dvr::State random_state =
-        dvr::State(Gaussian(arma::mat{1.},arma::vec{1}),arma::uvec{100},arma::mat{{-10,10}});
+        dvr::State(Gaussian<double>(arma::mat{1.},arma::vec{1}),arma::uvec{100},arma::mat{{-10,10}});
 
     const dvr::Operator op = dvr::Operator(random_state, Polynomial(arma::vec{0.5},lvec{2}));
 

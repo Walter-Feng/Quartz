@@ -4,7 +4,7 @@
 #include "alias.h"
 #include "trivial.h"
 #include "quartz_internal/error.h"
-
+#include "quartz_internal/util/member_function_wrapper.h"
 #include "quartz_internal/util/type_converter.h"
 
 namespace math {
@@ -36,6 +36,11 @@ struct Term {
     return this->coef * result;
   }
 
+  inline
+  Term() :
+  coef(0.0),
+  indices() {}
+
   explicit
   inline
   Term(const arma::uword dim, const T coef = T(0.0)) :
@@ -47,6 +52,11 @@ struct Term {
       coef(coef),
       indices(indices) {}
 
+  inline
+  Term(const T coef, const arma::uvec & indices) :
+      coef(coef),
+      indices(arma::conv_to<lvec>::from(indices)) {}
+
   arma::uword dim() const {
     return this->indices.n_elem;
   }
@@ -54,7 +64,7 @@ struct Term {
   template<typename U>
   Term<std::common_type_t<T, U>>
   scale(const arma::Col<U> & scaling) const {
-    return this->at(scaling) / this->coef * (*this);
+    return {this->at(scaling), this->indices};
   }
 
   template<typename U>
@@ -85,7 +95,7 @@ struct Term {
 #pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
-        result = result.derivative(j);
+        result = result.derivative(i);
       }
     }
 
@@ -93,8 +103,11 @@ struct Term {
   }
 
   template<typename U>
-  U differentiate(const U & function) const {
-    return this->coef * function.derivative(this->indices);
+  auto differentiate(const U & function) const {
+    if(arma::min(this->indices) < 0) {
+      throw Error("Quartz does not support integration operator");
+    }
+    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(this->indices)) * this->coef;
   }
 
   inline
@@ -134,6 +147,12 @@ public:
 
   arma::Col<T> coefs;
   lmat indices;
+
+  inline
+  Polynomial() :
+  coefs(),
+  indices() {}
+
 
   explicit
   inline
@@ -184,12 +203,11 @@ public:
     }
     Polynomial<T> result = Polynomial<T>(this->term(0).derivative(index));
 
-#pragma omp parallel for
     for (arma::uword i = 1; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).derivative(index);
     }
 
-    return result;
+    return result.clean();
   }
 
   inline
@@ -202,16 +220,16 @@ public:
 #pragma omp parallel for
     for (arma::uword i = 0; i < index.n_elem; i++) {
       for (arma::uword j = 0; j < index(i); j++) {
-        result = result.derivative(j);
+        result = result.derivative(i);
       }
     }
 
-    return result;
+    return result.clean();
   }
 
   template<typename U>
-  U differentiate(const U & function) const {
-    U result = U(function.dim());
+  auto differentiate(const U & function) const {
+    auto result = this->term(0).differentiate(function);
 #pragma omp parallel for
     for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
       const polynomial::Term<T> term = this->term(i);
@@ -274,13 +292,9 @@ public:
     return result;
   }
 
-  template<typename U>
-  Polynomial<std::common_type_t<T, U>>
-  scale(const arma::vec & scaling) const {
-    auto result = Polynomial<std::common_type_t<T, U>>(
-        this->term(0).scale(scaling));
+  Polynomial<T> scale(const arma::vec & scaling) const {
+    auto result = Polynomial<T>(this->term(0).scale(scaling));
 
-#pragma omp parallel for
     for (arma::uword i = 1; i < this->coefs.n_elem; i++) {
       result = result + this->term(i).scale(scaling);
     }
@@ -293,8 +307,8 @@ public:
       return Polynomial<T>(this->dim(), 1.0);
     }
     Polynomial<T> result = *this;
-    for (arma::uword i = 0; i < power; i++) {
-      result *= *this;
+    for (arma::uword i = 1; i < power; i++) {
+      result = result * *this;
     }
 
     return result;
@@ -345,7 +359,7 @@ public:
         new_coefs =
         arma::join_cols(converted_this_coefs, converted_B_coefs);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -355,10 +369,12 @@ public:
         this->indices.n_rows);
     const lmat new_indices = arma::join_rows(this->indices,
                                              dummy_indices);
+    const arma::Col<std::common_type_t<T,U>> converted_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T,U>>>::from(this->coefs);
     const arma::Col<std::common_type_t<T, U>> new_coefs = arma::join_cols(
-        this->coefs, B);
+        converted_coefs, arma::Col<std::common_type_t<T,U>>{B});
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -371,7 +387,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = arma::join_cols(converted_this_coefs, converted_B_coef);
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -382,7 +398,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = this->coefs * B.coef;
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -394,12 +410,12 @@ public:
       result_0 = result_0 + (*this) * B.term(i);
     }
 
-    return result_0;
+    return result_0.clean();
   }
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator*(const U B) const {
-    return {this->coefs * B, this->indices};
+    return Polynomial<std::common_type_t<T, U>>{this->coefs * B, this->indices}.clean();
   }
 
   template<typename U>
@@ -410,15 +426,7 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator-(const U B) const {
-
-    const lvec dummy_indices = arma::zeros<lvec>(
-        this->indices.n_rows);
-    const lmat new_indices = arma::join_rows(this->indices,
-                                             dummy_indices);
-    const arma::Col<std::common_type_t<T, U>>
-        new_coefs = arma::join_cols(this->coefs, -B);
-
-    return {new_coefs, new_indices};
+    return *this + (-B);
   }
 
   template<typename U>
@@ -433,7 +441,31 @@ public:
     new_indices.each_col() -= B.indices;
     const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
-    return {new_coefs, new_indices};
+    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+  }
+
+  Polynomial<T> clean() const {
+    const arma::uvec non_zero = arma::find(this->coefs);
+
+    if(non_zero.n_elem == 0) {
+      return Polynomial<T>(this->dim());
+    }
+    return Polynomial<T>(this->coefs.rows(non_zero), this->indices.cols(non_zero));
+  }
+
+  std::string to_string(const int precision = 6,
+                        const int width = 12) const {
+    std::string result = "";
+
+    for(arma::uword i=0; i<this->indices.n_cols; i++) {
+      result = result + "+ " +
+          utils::to_string_with_precision(this->coefs(i), precision, width) + " ( ";
+      for(arma::uword j=0; j<this->indices.n_rows; j++) {
+        result = result + "x" + std::to_string(j) + "^" + std::to_string(this->indices(j,i)) + " ";
+      }
+      result = result + ") \n";
+    }
+    return result;
   }
 
 };

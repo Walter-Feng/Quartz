@@ -32,6 +32,28 @@ using OperatorWrapper = std::function<
     Propagator<State>(const Operator &, const Potential &)
 >;
 
+template<typename Operator,
+    typename State,
+    typename Potential>
+OperatorWrapper<Operator, State, Potential>
+operator<<(const OperatorWrapper<Operator, State, Potential> & A,
+           const OperatorWrapper<Operator, State, Potential> & B) {
+
+  //return in the form of OperatorWrapper
+  return [A, B](const Operator & op, const Potential & potential)
+      -> Propagator<State> {
+
+    const Propagator<State> a = A(op, potential);
+    const Propagator<State> b = B(op, potential);
+
+    //OperatorWrapper requires returning of Propagator
+    return [a, b](const State state,
+                    const double dt) -> State {
+      const State intermediate_state = a(state, dt);
+      return b(intermediate_state, dt);
+    };
+  };
+}
 
 //TODO(Rui): Check if printer can be constant
 // when the printer is going to change the value of,
@@ -65,7 +87,7 @@ propagate(const State & initial_state,
     State state = initial_state;
 
     for (arma::uword i = 1; i <= steps; i++) {
-      state = std::move(propagator(state, dt));
+      state = propagator(state, dt);
       printer(state, i, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
@@ -86,8 +108,8 @@ propagate(const State & initial_state,
     const Propagator<State> propagator =
         operator_wrapper(op, potential);
 
-    for(arma::uword i = 1; i <= steps; i++) {
-      state = propagator(state, dt);
+    for (arma::uword i = 1; i <= steps; i++) {
+      state = std::move(propagator(state, dt));
       printer(state, i, i * dt, print_level, false);
     }
 

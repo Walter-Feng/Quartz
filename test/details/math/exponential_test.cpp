@@ -15,12 +15,12 @@ TEST_CASE("Exponential Value") {
     const Exponential<double> exponential = Exponential<double>(arma::vec{1, 2},
                                                                 arma::mat{{2, 4}});
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(exponential.at(arma::vec{grid(i)})
             == std::exp(2 * grid(i)) + 2 * std::exp(4 * grid(i)));
     }
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       const auto lhs = exponential.at(arma::cx_vec{cx_grid(i)});
       const auto rhs =
           std::exp(2. * cx_grid(i)) + 2. * std::exp(4. * cx_grid(i));
@@ -39,7 +39,7 @@ TEST_CASE("Exponential Value") {
 
     arma::vec rhs = arma::vec(10);
 
-    for (int i = 0; i < 10; i++) {
+    for (arma::uword i = 0; i < 10; i++) {
       rhs(i) = std::exp(arma::sum(grid.col(i) % wavenumbers));
     }
 
@@ -58,7 +58,7 @@ TEST_CASE("Exponential Derivative") {
 
     const auto derivative = exponential.derivative(0);
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(derivative.at(arma::vec{grid(i)})
             == 2. * std::exp(2 * grid(i)) + 8. * std::exp(4 * grid(i)));
     }
@@ -77,7 +77,7 @@ TEST_CASE("Exponential Derivative") {
 
     arma::vec rhs = arma::vec(10);
 
-    for (int i = 0; i < 10; i++) {
+    for (arma::uword i = 0; i < 10; i++) {
       rhs(i) =
           wavenumbers(6) * arma::prod(arma::exp(grid.col(i) % wavenumbers));
     }
@@ -98,7 +98,7 @@ TEST_CASE("Exponential Operators") {
 
     const auto derivative = exponential.derivative(0);
 
-    for (int i = 0; i < grid.n_elem; i++) {
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::abs(
           (derivative * derivative).at(arma::vec{grid(i)})
             -
@@ -120,7 +120,7 @@ TEST_CASE("Exponential Operators") {
 
     arma::vec rhs = arma::vec(10);
 
-    for (int i = 0; i < 10; i++) {
+    for (arma::uword i = 0; i < 10; i++) {
       rhs(i) =
           wavenumbers(6) * arma::prod(arma::exp(grid.col(i) % wavenumbers));
     }

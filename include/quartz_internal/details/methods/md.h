@@ -1,5 +1,5 @@
-#ifndef QUARTZ_MD_H
-#define QUARTZ_MD_H
+#ifndef METHODS_MD_H
+#define METHODS_MD_H
 
 namespace method {
 // use your method name to create a subspace for your
@@ -96,23 +96,16 @@ public:
 
   inline
   arma::vec positional_expectation() const {
-
     arma::uword dim = this->dim();
 
-    arma::mat points_copy_positional_part = this->points.rows(0, dim - 1);
-    points_copy_positional_part.each_row() %= this->weights.t();
-
-    return arma::sum(points_copy_positional_part, 1) / arma::sum(this->weights);
+    return this->points.rows(0, dim - 1) * this->weights / arma::sum(this->weights);
   }
 
   inline
   arma::vec momentum_expectation() const {
     arma::uword dim = this->dim();
 
-    arma::mat points_copy_momentum_part = this->points.rows(dim, 2 * dim - 1);
-    points_copy_momentum_part.each_row() %= this->weights.t();
-
-    return arma::sum(points_copy_momentum_part, 1) / arma::sum(this->weights);
+    return this->points.rows(dim, 2 * dim -1) * this->weights / arma::sum(this->weights);
   }
 
   State operator+(const State & B) const {
@@ -167,4 +160,4 @@ public:
 }
 
 
-#endif //QUARTZ_MD_H
+#endif //METHODS_MD_H
