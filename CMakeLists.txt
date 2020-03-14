@@ -73,9 +73,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
 ########fmt#########
 
 add_subdirectory(external/fmt)
-include_directories ("external/fmt/include")
-target_include_directories(fmt PUBLIC external/fmt/include)
-target_link_libraries(quartz fmt)
+include_directories("external/fmt/include")
+target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
 
 ####################
