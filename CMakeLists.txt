@@ -82,7 +82,6 @@ add_library(catch2 SHARED external/Catch2/Catch_main.cpp)
 include_directories("external/Catch2")
 target_include_directories(catch2 PUBLIC external/Catch2/)
 
-
 ########fmt#########
 
 add_subdirectory(external/fmt)
@@ -91,12 +90,28 @@ target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
 
 
-########args#########
 
-add_subdirectory(external/args)
-include_directories("external/args")
-target_link_libraries(quartz args)
-add_definitions(-DHAVE_ARGS)
+#######################
+# Compile Executables #
+#######################
+
+option(HAVE_EXE "Have Executables" ON)
+
+if(HAVE_EXE)
+
+    ########args#########
+    add_subdirectory(external/args)
+    include_directories("external/args")
+    target_link_libraries(quartz args)
+    add_definitions(-DHAVE_ARGS)
+
+    add_executable(quartz.exe
+                src/main.cpp
+            )
+
+    target_link_libraries(quartz.exe quartz)
+
+endif()
 
 ####################
 #       Test       #

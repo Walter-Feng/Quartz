@@ -129,6 +129,15 @@ struct Term {
 template<typename T>
 struct Polynomial {
 public:
+
+  arma::Col<T> coefs;
+  lmat indices;
+
+  inline
+  Polynomial(void) :
+      coefs(),
+      indices() {}
+
   inline
   Polynomial(const arma::Col<T> & coefs, const lmat & indices) :
       coefs(coefs),
@@ -139,22 +148,16 @@ public:
     }
   }
 
-  explicit
   inline
-  Polynomial(const polynomial::Term<T> term) :
+  Polynomial(const polynomial::Term<T> & term) :
       coefs(arma::Col<T>{term.coef}),
       indices(lmat(term.indices)) {}
 
-  arma::Col<T> coefs;
-  lmat indices;
-
   inline
-  Polynomial() :
-  coefs(),
-  indices() {}
+  Polynomial(const Polynomial<T> & term) :
+      coefs(term.coefs),
+      indices(term.indices) {}
 
-
-  explicit
   inline
   Polynomial(const arma::uword dim, const T coef = 0.0) :
       coefs(arma::Col<T>{coef}),
