@@ -15,6 +15,12 @@ struct Gaussian {
   arma::Col<T> center;
 
   inline
+  Gaussian(const Gaussian<T> & gaussian) :
+  coef(gaussian.coef),
+  covariance(gaussian.covariance),
+  center(gaussian.center) {}
+
+  inline
   Gaussian(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
       covariance(arma::eye<arma::mat>(dim, dim)),
@@ -215,7 +221,11 @@ struct GaussianWithPoly {
   Polynomial<T> polynomial;
   Gaussian<T> gaussian;
 
-  explicit
+  inline
+  GaussianWithPoly(const GaussianWithPoly<T> & function) :
+  polynomial(function.polynomial),
+  gaussian(function.gaussian) {}
+
   inline
   GaussianWithPoly(const arma::uword dim, const T coef = 0.0) :
       polynomial(Polynomial<T>(dim, coef)),
