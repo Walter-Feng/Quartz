@@ -84,11 +84,12 @@ target_include_directories(catch2 PUBLIC external/Catch2/)
 
 ########fmt#########
 
+message("\n This is {fmt} library.")
 add_subdirectory(external/fmt)
 include_directories("external/fmt/include")
 target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
-
+message("\n")
 
 
 #######################
