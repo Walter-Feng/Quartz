@@ -61,6 +61,23 @@ TEST_CASE("Check printer") {
     }
   }
 
+  SECTION("Expectation printer") {
+    struct dummy_state {
+      [[nodiscard]] auto expectation(const math::Polynomial<double> & function) const {
+        const arma::vec random_position = arma::randu<arma::vec>(function.dim());
+        return function.at(random_position);
+      }
+    } test;
+
+    const auto operators = polynomial_observables(1,5);
+
+    const auto printer = expectation_printer<dummy_state>(operators);
+
+    printer(test, 0, 0, 1, true);
+    for (int i = 0; i < 5; i++) {
+      printer(test, i+1, 0.1 * (i + 1), 1, false);
+    }
+  }
 }
 
 }

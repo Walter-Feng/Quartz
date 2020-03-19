@@ -11,6 +11,7 @@
 
 #include "util/member_function_wrapper.h"
 
+
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
@@ -289,6 +290,17 @@ public:
 
     return md::State(phase_space_points, weights, this->masses);
 
+  }
+
+  template<typename Function>
+  double expectation(const Function & observable) const {
+    const md::State transformed = this->wigner_transform();
+    return transformed.expectation(observable);
+  }
+
+  inline
+  md::State wigner_transform() const {
+    return this->wigner_transform(this->grid, this->ranges);
   }
 
   inline

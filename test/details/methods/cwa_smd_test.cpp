@@ -6,8 +6,6 @@ namespace quartz {
 
 TEST_CASE("Classical Wigner Approximation + Semi Moyal Dynamics") {
 
-  const double dt = 0.01;
-
   const method::cwa_smd::State initial_state =
       method::cwa_smd::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{
                                  1}).wigner_transform(),
@@ -24,14 +22,6 @@ TEST_CASE("Classical Wigner Approximation + Semi Moyal Dynamics") {
       math::runge_kutta_4<method::cwa_smd::Operator,
           method::cwa_smd::State,
           math::Polynomial<double>>;
-
-  const auto result = propagate(initial_state,
-                                op,
-                                wrapper,
-                                harmonic_potential,
-                                generic_printer<method::cwa_smd::State>, 10, dt,
-                                2);
-
 
 }
 

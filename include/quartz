@@ -29,6 +29,7 @@ const std::string version = "0.0.1";
 // Details
 
 // Math
+#include "quartz_internal/details/math/util.h"
 #include "quartz_internal/details/math/polynomial.h"
 #include "quartz_internal/details/math/sinusoidal.h"
 #include "quartz_internal/details/math/schrotinger_wrapper.h"
@@ -38,6 +39,13 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/math/runge_kutta.h"
 #include "quartz_internal/details/math/moyal_bracket.h"
 
+//utils
+#include "quartz_internal/util/check_member.h"
+#include "quartz_internal/util/type_converter.h"
+#include "quartz_internal/util/member_function_wrapper.h"
+#include "quartz_internal/util/elementary_function_operator.h"
+#include "quartz_internal/util/auto_generator.h"
+
 // Methods
 #include "quartz_internal/details/methods/dvr.h"
 #include "quartz_internal/details/methods/md.h"
@@ -46,14 +54,8 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/methods/wd.h"
 #include "quartz_internal/details/methods/dmd.h"
 #include "quartz_internal/details/methods/cwa_smd.h"
+#include "quartz_internal/details/methods/dvr_smd.h"
 // #include "quartz_internal/details/methods/method_template.h"
-
-//utils
-#include "quartz_internal/util/check_member.h"
-#include "quartz_internal/util/type_converter.h"
-#include "quartz_internal/util/member_function_wrapper.h"
-#include "quartz_internal/util/elementary_function_operator.h"
-#include "quartz_internal/util/auto_generator.h"
 
 #pragma GCC diagnostic pop
 

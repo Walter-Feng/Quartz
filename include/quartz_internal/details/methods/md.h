@@ -94,6 +94,13 @@ public:
                  this->masses);
   }
 
+  template<typename Function>
+  double expectation(const Function & function) const {
+    auto result = at(function, this->points);
+
+    return arma::dot(result, weights) / arma::sum(weights);
+  }
+
   inline
   arma::vec positional_expectation() const {
     arma::uword dim = this->dim();

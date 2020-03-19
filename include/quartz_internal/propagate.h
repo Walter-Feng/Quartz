@@ -8,7 +8,8 @@
 
 enum PropagationType {
   Schrotinger,
-  Classic
+  Classic,
+  Mixed
 };
 
 template<typename State>
@@ -82,7 +83,7 @@ propagate(const State & initial_state,
 
     //print out initial state & header
 
-    printer(initial_state, 0, 0.0, print_level, true);
+    const int total_length = printer(initial_state, 0, 0.0, print_level, true);
 
     State state = initial_state;
 
@@ -91,6 +92,11 @@ propagate(const State & initial_state,
       printer(state, i, i * dt, print_level, false);
       updated_potential.time_evolve(dt);
     }
+
+    for (int i = 0; i < total_length; i++) {
+      fmt::print("=");
+    }
+    fmt::print("\n");
 
     fmt::print("\n");
     fmt::print("Quartz terminated normally.\n");
@@ -102,7 +108,7 @@ propagate(const State & initial_state,
   else {
     //print out initial state & header
 
-    printer(initial_state, 0, 0.0, print_level, true);
+    const int total_length = printer(initial_state, 0, 0.0, print_level, true);
 
     State state = initial_state;
     const Propagator<State> propagator =
@@ -112,7 +118,10 @@ propagate(const State & initial_state,
       state = std::move(propagator(state, dt));
       printer(state, i, i * dt, print_level, false);
     }
-
+    for (int i = 0; i < total_length; i++) {
+      fmt::print("=");
+    }
+    fmt::print("\n");
     fmt::print("\n");
     fmt::print("Quartz terminated normally.\n");
 

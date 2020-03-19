@@ -456,17 +456,42 @@ public:
     return Polynomial<T>(this->coefs.rows(non_zero), this->indices.cols(non_zero));
   }
 
-  std::string to_string(const int precision = 6,
-                        const int width = 12) const {
+  std::string to_string(const int precision = 3,
+                        const int width = -1) const {
+
+    const std::vector<std::string> variables =
+        util::variable_names(this->dim());
+
     std::string result = "";
 
-    for(arma::uword i=0; i<this->indices.n_cols; i++) {
-      result = result + "+ " +
-          utils::to_string_with_precision(this->coefs(i), precision, width) + " ( ";
-      for(arma::uword j=0; j<this->indices.n_rows; j++) {
-        result = result + "x" + std::to_string(j) + "^" + std::to_string(this->indices(j,i)) + " ";
+    if(width <= 0) {
+      result += fmt::format("{:.{}}", this->coefs(0), precision);
+    } else {
+      result += format(coefs(0), width, precision);
+    }
+    for(arma::uword j=0; j<this->indices.n_rows; j++) {
+      result =
+          result + variables[0] + "^" + std::to_string(this->indices(j,0)) + " ";
+    }
+
+    for(arma::uword i=1; i<this->indices.n_cols; i++) {
+
+      if(coefs(i) < 0) {
+        result += "+ ";
+      } else {
+        result += "- ";
       }
-      result = result + ") \n";
+
+      if(width <= 0) {
+        result += fmt::format("{:.{}}", this->coefs(i), precision);
+      } else {
+        result += format(coefs(i), width, precision);
+      }
+      for(arma::uword j=0; j<this->indices.n_rows; j++) {
+        result =
+            result + variables[i] + "^" + std::to_string(this->indices(j,i)) + " ";
+      }
+
     }
     return result;
   }
@@ -485,7 +510,6 @@ std::vector<Polynomial<T>> transform(const arma::Mat<T> & transform_matrix) {
 
   return result;
 }
-
 }
 
 
