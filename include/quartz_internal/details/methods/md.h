@@ -95,8 +95,20 @@ public:
   }
 
   template<typename Function>
+  arma::vec expectation(const std::vector<Function> & function) const {
+    arma::vec result(function.size());
+
+#pragma omp parallel for
+    for(arma::uword i=0;i<result.n_elem;i++) {
+      result(i) = arma::dot(at(function[i], this->points), weights) / arma::sum(weights);
+    }
+
+    return result;
+  }
+
+  template<typename Function>
   double expectation(const Function & function) const {
-    auto result = at(function, this->points);
+    const arma::vec result = at(function, this->points);
 
     return arma::dot(result, weights) / arma::sum(weights);
   }

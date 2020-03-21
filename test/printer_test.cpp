@@ -23,21 +23,21 @@ TEST_CASE("Check printer") {
 
     printer(test, 0, 0.0, 1, true);
     for (int i = 0; i < 5; i++) {
-      printer(test, i+1, 0.1 * (i + 1), 1, false);
+      printer(test, i + 1, 0.1 * (i + 1), 1, false);
     }
 
     std::cout << std::endl;
 
     printer(test, 0, 0, 2, true);
     for (int i = 0; i < 5; i++) {
-      printer(test, i+1, 0.1 * (i + 1), 2, false);
+      printer(test, i + 1, 0.1 * (i + 1), 2, false);
     }
 
     std::cout << std::endl;
 
     printer(test, 0, 0, 3, true);
     for (int i = 0; i < 5; i++) {
-      printer(test, i+1, 0.1 * (i + 1), 3, false);
+      printer(test, i + 1, 0.1 * (i + 1), 3, false);
     }
     std::cout << std::endl;
   }
@@ -57,25 +57,27 @@ TEST_CASE("Check printer") {
 
     printer(test, 0, 0, 1, true);
     for (int i = 0; i < 5; i++) {
-      printer(test, i+1, 0.1 * (i + 1), 1, false);
+      printer(test, i + 1, 0.1 * (i + 1), 1, false);
     }
   }
 
   SECTION("Expectation printer") {
     struct dummy_state {
-      [[nodiscard]] auto expectation(const math::Polynomial<double> & function) const {
-        const arma::vec random_position = arma::randu<arma::vec>(function.dim());
-        return function.at(random_position);
+      [[nodiscard]] arma::vec expectation(
+          const std::vector<math::Polynomial<double>> & function) const {
+        const arma::vec random_position = arma::randu<arma::vec>(
+            function[0].dim());
+        return {function[0].at(random_position)};
       }
     } test;
 
-    const auto operators = polynomial_observables(1,5);
+    const auto operators = polynomial_observables(1, 5);
 
     const auto printer = expectation_printer<dummy_state>(operators);
 
     printer(test, 0, 0, 1, true);
     for (int i = 0; i < 5; i++) {
-      printer(test, i+1, 0.1 * (i + 1), 1, false);
+      printer(test, i + 1, 0.1 * (i + 1), 1, false);
     }
   }
 }

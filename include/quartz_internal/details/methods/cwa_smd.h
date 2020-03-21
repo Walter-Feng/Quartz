@@ -247,7 +247,7 @@ public:
   arma::vec positional_expectation() const {
 
     const arma::vec result = this->expectations(this->positional_indices);
-    const arma::vec scale = this->scaling.rows(0,this->dim() - 1);
+    const arma::vec scale = this->scaling.rows(0, this->dim() - 1);
 
     return result * scale;
   }
@@ -255,7 +255,8 @@ public:
   inline
   arma::vec momentum_expectation() const {
     const arma::vec result = this->expectations(this->momentum_indices);
-    const arma::vec scale = this->scaling.rows(this->dim(), 2 * this->dim() - 1);
+    const arma::vec scale = this->scaling.rows(this->dim(),
+                                               2 * this->dim() - 1);
 
     return result * scale;
   }
@@ -283,7 +284,7 @@ public:
   }
 
   template<typename T>
-  auto expectation(const math::Polynomial <T> & polynomial) {
+  auto expectation(const math::Polynomial <T> & polynomial) const {
     return details::at_search(polynomial,
                               this->points,
                               this->weights,
@@ -291,6 +292,18 @@ public:
                               this->expectation_table,
                               this->scaling,
                               this->grade);
+  }
+
+  template<typename T>
+  arma::vec expectation(const std::vector<math::Polynomial<T>> & polynomials) const {
+    arma::vec result(polynomials.size());
+    
+#pragma omp parallel for
+    for(arma::uword i=0; i<result.n_elem; i++) {
+      result(i) = this->expectation(polynomials[i]);
+    }
+
+    return result;
   }
 };
 

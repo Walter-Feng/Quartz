@@ -10,12 +10,24 @@ void print(const arma::Mat<T> & arma,
            const std::string aligned = ">") {
   for (arma::uword i = 0; i < arma.n_rows; i++) {
     for (arma::uword j = 0; j < arma.n_cols; j++) {
-      const auto formatted =
+      const std::string formatted =
           fmt::format("{:.{}}", arma(i, j), precision);
       fmt::print("{:" + aligned + "{}}", formatted, width);
     }
     fmt::print("\n");
   }
+}
+
+template<typename T>
+void print(const arma::Row<T> & arma,
+           const int width = 10,
+           const int precision = 6,
+           const std::string aligned = ">") {
+    for (arma::uword j = 0; j < arma.n_cols; j++) {
+      const std::string formatted =
+          fmt::format("{:.{}}", arma(j), precision);
+      fmt::print("{:" + aligned + "{}}", formatted, width);
+    }
 }
 
 template<typename T>
@@ -160,8 +172,8 @@ Printer<State> generic_printer = [](const State & state,
 template<typename State, typename Function>
 Printer<State> expectation_printer(const std::vector<Function> & observables) {
 
-  static_assert(has_expectation<State, double(Function)>::value,
-                "The state does not support exporting positional expectation values, "
+  static_assert(has_expectation<State, arma::vec(std::vector<Function>)>::value,
+                "The state does not support exporting arbitrary expectation values, "
                 "therefore not support generic printers");
 
   return [&observables](const State & state,
@@ -172,7 +184,7 @@ Printer<State> expectation_printer(const std::vector<Function> & observables) {
 
     std::vector<std::string> observables_string(observables.size());
     int max_width = 0;
-    for (int i = 0; i < observables.size(); i++) {
+    for (unsigned long i = 0; i < observables.size(); i++) {
       observables_string[i] = observables[i].to_string();
       max_width = std::max(max_width, (int) observables_string[i].length());
     }
@@ -205,7 +217,7 @@ Printer<State> expectation_printer(const std::vector<Function> & observables) {
       }
       fmt::print("\n");
       fmt::print("{:>{}}", "|", 6 + width);
-      for (int i = 0; i < observables.size(); i++) {
+      for (unsigned long i = 0; i < observables.size(); i++) {
         fmt::print("{:>{}}", observables[i].to_string() + " |", width);
       }
       fmt::print("\n");
@@ -217,9 +229,11 @@ Printer<State> expectation_printer(const std::vector<Function> & observables) {
 
     fmt::print("{:>{}}", index, 6);
     print(time, width, precision);
-    for (int i = 0; i < observables.size(); i++) {
-      print(state.expectation(observables[i]), width, precision);
-    }
+
+    const arma::rowvec expectation = state.expectation(observables).t();
+
+    print(expectation, width, precision);
+
     fmt::print("\n");
 
     return total_length;

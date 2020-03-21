@@ -99,11 +99,15 @@ option(HAVE_EXE "Have Executables" ON)
 
 if(HAVE_EXE)
 
+    option(ARGS_BUILD_EXAMPLE OFF)
+    option(ARGS_BUILD_UNITTESTS OFF)
     ########args#########
     add_subdirectory(external/args)
     include_directories("external/args")
     target_link_libraries(quartz args)
     add_definitions(-DHAVE_ARGS)
+
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
     add_executable(quartz.exe
                 src/main.cpp
@@ -111,11 +115,20 @@ if(HAVE_EXE)
 
     target_link_libraries(quartz.exe quartz)
 
+
+    add_executable(quartz_expectation
+            src/expectation.cpp
+            )
+
+    target_link_libraries(quartz_expectation quartz)
+
 endif()
 
 ####################
 #       Test       #
 ####################
+
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test )
 
 add_executable(test_core
         test/printer_test.cpp

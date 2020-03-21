@@ -247,15 +247,15 @@ public:
     arma::vec weights(phase_space_points.n_cols, arma::fill::zeros);
 
 #pragma omp parallel for
-    for (arma::uword i = 0; i < weights.n_cols; i++) {
+    for (arma::uword i = 0; i < weights.n_elem; i++) {
 
-      const arma::uvec X = phase_space_iterations.col(i);
+      const arma::uvec X = phase_space_iterations.col(i).rows(0, this->dim()-1);
 
       const arma::vec P = phase_space_points.col(i).rows(this->dim(), 2*this->dim()-1);
+
       for (arma::uword j = 0; j < Y_iterations.n_cols; j++) {
         const arma::uvec Y = Y_iterations.col(j);
-        const arma::vec Y_num =
-            Y * scaling.rows(0, this->dim() - 1) + this->ranges.col(0);
+        const arma::vec Y_num = Y % scaling.rows(0, this->dim() - 1);
 
         const arma::uvec X_less_than_Y = arma::find(X<Y);
         const arma::uvec X_plus_Y_greater_than_grid = arma::find(X + Y > this->grid - 1);
@@ -268,22 +268,21 @@ public:
           const arma::uword X_plus_Y_index =
               math::space::indices_to_index(X_plus_Y,real_space_table);
 
-          if(arma::approx_equal(Y,arma::zeros<arma::uvec>(arma::size(Y)),"abs_diff",0)) {
+          const arma::uvec non_zero_Y = arma::find(Y);
+          if(non_zero_Y.n_elem == 0) {
             const double term = std::real(
-                std::exp(2.0 * cx_double{0.0,1.0} * arma::dot(P,Y)) *
+                std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
                 std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
 
             weights(i) += term / std::pow(2.0 * math::pi, this->dim());
           }
           else {
             const double term = 2.0 * std::real(
-                std::exp(2.0 * cx_double{0.0,1.0} * arma::dot(P,Y)) *
+                std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
                 std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
 
             weights(i) += term / std::pow(2.0 * math::pi, this->dim());
           }
-
-
         }
       }
     }
@@ -293,9 +292,21 @@ public:
   }
 
   template<typename Function>
+  arma::vec expectation(const std::vector<Function> & observables) const {
+    const md::State transformed = this->wigner_transform();
+
+    arma::vec result = transformed.expectation(observables);
+
+    return result;
+  }
+
+  template<typename Function>
   double expectation(const Function & observable) const {
     const md::State transformed = this->wigner_transform();
-    return transformed.expectation(observable);
+
+    const double result = transformed.expectation(observable);
+
+    return result;
   }
 
   inline
