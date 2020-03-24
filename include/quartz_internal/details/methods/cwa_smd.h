@@ -44,10 +44,10 @@ auto at_search(const math::polynomial::Term <T> & term,
                const arma::vec & scaling,
                const arma::uword grade) {
 
-  if ((arma::uword) arma::max(term.indices) >= grade) {
+  if ((arma::uword) arma::max(term.exponents) >= grade) {
     return expectation(term, points, weights, scaling);
   } else {
-    const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.indices);
+    const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.exponents);
 
     return term.coef *
            expectations(math::space::indices_to_index(indices, table));
@@ -120,7 +120,7 @@ public:
     this->scaling = ranges;
 
 
-    // indices check in
+    // exponents check in
 #pragma omp parallel for
     for (arma::uword i = 0; i < dimension / 2; i++) {
       arma::uvec X = arma::zeros<arma::uvec>(dimension);
@@ -174,7 +174,7 @@ public:
     const arma::vec ranges = range.col(1) - range.col(0);
     this->scaling = ranges;
 
-    // indices check in
+    // exponents check in
     for (arma::uword i = 0; i < dimension / 2; i++) {
       arma::uvec X = arma::zeros<arma::uvec>(dimension);
       arma::uvec P = arma::zeros<arma::uvec>(dimension);
@@ -264,7 +264,7 @@ public:
   State operator+(const State & B) const {
     if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
         !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
-      throw Error("Different md states are being added");
+      throw Error("Different cwa states are being added");
     }
 
     State state = B;
@@ -387,7 +387,7 @@ public:
 
 };
 
-} // namespace md
+} // namespace cwa
 }
 
 #endif //METHODS_CWA_SMD_H

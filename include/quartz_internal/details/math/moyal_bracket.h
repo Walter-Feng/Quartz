@@ -68,10 +68,10 @@ auto poisson_operate(const Polynomial<double> & poisson_operator,
                                    const A & a,
                                    const H & h) {
     return
-        polynomial::Term<double>(term.coef, term.indices(
+        polynomial::Term<double>(term.coef, term.exponents(
             arma::span(0, dim * 2 - 1))).differentiate(a)
         *
-        polynomial::Term<double>(1.0, term.indices(
+        polynomial::Term<double>(1.0, term.exponents(
             arma::span(dim * 2, dim * 4 - 1))).differentiate(h);
   };
 

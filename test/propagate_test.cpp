@@ -47,26 +47,26 @@ TEST_CASE("Propagate") {
 
     const double dt = 0.01;
 
-    const method::md::State initial_state =
-        method::md::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
-                          arma::uvec{30,30},
-                          arma::mat{{-5, 5},{-5,5}});
+    const method::cwa::State initial_state =
+        method::cwa::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{1}).wigner_transform(),
+                           arma::uvec{30,30},
+                           arma::mat{{-5, 5},{-5,5}});
 
     const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
                                                              lmat{2});
 
-    const auto op = method::md::Operator(initial_state, harmonic_potential);
+    const auto op = method::cwa::Operator(initial_state, harmonic_potential);
 
     const auto wrapper =
-        math::runge_kutta_4<method::md::Operator<math::Polynomial<double>>,
-            method::md::State,
+        math::runge_kutta_4<method::cwa::Operator<math::Polynomial<double>>,
+            method::cwa::State,
             math::Polynomial<double>>;
 
     const auto result = propagate(initial_state,
                                   op,
                                   wrapper,
                                   harmonic_potential,
-                                  generic_printer<method::md::State>, 10, dt,
+                                  generic_printer<method::cwa::State>, 10, dt,
                                   2);
 
 

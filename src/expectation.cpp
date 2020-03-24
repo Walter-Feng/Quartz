@@ -174,22 +174,22 @@ int main(const int argc, const char * argv[]) {
                                     expectation_printer<method::dvr::State>(observables),
                                     steps, dt, print_level);
     } else if (method == "cwa") {
-      const method::md::State initial_state =
-          method::md::State(initial_wf.wigner_transform(),
-                            arma::uvec{grid_size, grid_size},
-                            arma::mat{{-span, span},
+      const method::cwa::State initial_state =
+          method::cwa::State(initial_wf.wigner_transform(),
+                             arma::uvec{grid_size, grid_size},
+                             arma::mat{{-span, span},
                                       {-span, span}},
-                            arma::vec{mass});
+                             arma::vec{mass});
 
-      const auto op = method::md::Operator(initial_state, potential);
+      const auto op = method::cwa::Operator(initial_state, potential);
 
       const auto wrapper =
-          math::runge_kutta_4<method::md::Operator<math::Polynomial<double>>,
-              method::md::State,
+          math::runge_kutta_4<method::cwa::Operator<math::Polynomial<double>>,
+              method::cwa::State,
               math::Polynomial<double>>;
 
       const auto result = propagate(initial_state, op, wrapper, potential,
-                                    expectation_printer<method::md::State>(observables),
+                                    expectation_printer<method::cwa::State>(observables),
                                     steps, dt, print_level);
     } else if (method == "cwa_smd") {
       if (!options) {

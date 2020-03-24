@@ -3,7 +3,7 @@
 #define METHODS_DVR_H
 
 // include only the necessary header files
-#include "md.h"
+#include "cwa.h"
 #include "quartz_internal/propagate.h"
 #include "details/math/polynomial.h"
 #include "details/math/constants.h"
@@ -221,7 +221,7 @@ public:
   }
 
   inline
-  md::State wigner_transform(
+  cwa::State wigner_transform(
       const arma::uvec & momentum_space_grid,
       const arma::mat & momentum_space_ranges) const {
 
@@ -287,13 +287,13 @@ public:
       }
     }
 
-    return md::State(phase_space_points, weights, this->masses);
+    return cwa::State(phase_space_points, weights, this->masses);
 
   }
 
   template<typename Function>
   arma::vec expectation(const std::vector<Function> & observables) const {
-    const md::State transformed = this->wigner_transform();
+    const cwa::State transformed = this->wigner_transform();
 
     arma::vec result = transformed.expectation(observables);
 
@@ -302,7 +302,7 @@ public:
 
   template<typename Function>
   double expectation(const Function & observable) const {
-    const md::State transformed = this->wigner_transform();
+    const cwa::State transformed = this->wigner_transform();
 
     const double result = transformed.expectation(observable);
 
@@ -310,7 +310,7 @@ public:
   }
 
   inline
-  md::State wigner_transform() const {
+  cwa::State wigner_transform() const {
     return this->wigner_transform(this->grid, this->ranges);
   }
 

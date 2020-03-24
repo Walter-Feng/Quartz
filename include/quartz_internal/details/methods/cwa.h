@@ -4,7 +4,7 @@
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
-namespace md {
+namespace cwa {
 
 namespace details {
 
@@ -130,7 +130,7 @@ public:
   State operator+(const State & B) const {
     if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
         !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
-      throw Error("Different md states are being added");
+      throw Error("Different cwa states are being added");
     }
 
     return State(this->points + B.points, this->weights, this->masses);
@@ -175,7 +175,7 @@ public:
 
 };
 
-} // namespace md
+} // namespace cwa
 }
 
 

@@ -34,7 +34,7 @@ arma::mat effective_force(const Potential & potential,
 
 } // namespace details
 
-using State = md::State;
+using State = cwa::State;
 
 template<typename Potential, typename Initial>
 struct Operator {
@@ -74,7 +74,7 @@ public:
 
 };
 
-} // namespace md
+} // namespace cwa
 }
 
 #endif //METHODS_WD_H

@@ -37,7 +37,7 @@ auto expectation(const Function & function,
 
 template<typename Function>
 auto expectation(const Function & function,
-                 const md::State & state,
+                 const cwa::State & state,
                  const arma::vec & scaling) {
 
   return expectation(function, state.points, state.weights, scaling);
@@ -45,16 +45,16 @@ auto expectation(const Function & function,
 
 template<typename T>
 auto at_search(const math::polynomial::Term <T> & term,
-               const md::State & state,
+               const cwa::State & state,
                const arma::vec & expectations,
                const arma::uvec & table,
                const arma::vec & scaling,
                const arma::uword grade) {
 
-  if ((arma::uword) arma::max(term.indices) >= grade) {
+  if ((arma::uword) arma::max(term.exponents) >= grade) {
     return expectation(term, state.points, state.weights, scaling);
   } else {
-    const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.indices);
+    const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.exponents);
 
     return term.coef *
            expectations(math::space::indices_to_index(indices, table));
@@ -63,7 +63,7 @@ auto at_search(const math::polynomial::Term <T> & term,
 
 template<typename T>
 auto at_search(const math::Polynomial <T> & polynomial,
-               const md::State & state,
+               const cwa::State & state,
                const arma::vec & expectations,
                const arma::uvec & table,
                const arma::vec & scaling,
@@ -126,7 +126,7 @@ public:
     this->scaling = ranges;
 
 
-    // indices check in
+    // exponents check in
 #pragma omp parallel for
     for (arma::uword i = 0; i < dimension / 2; i++) {
       arma::uvec X = arma::zeros<arma::uvec>(dimension);
@@ -146,7 +146,7 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      const md::State initial_cwa(initial, grid, range, masses);
+      const cwa::State initial_cwa(initial, grid, range, masses);
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),
                                initial_cwa, this->scaling);
@@ -182,7 +182,7 @@ public:
     const arma::vec ranges = range.col(1) - range.col(0);
     this->scaling = ranges;
 
-    // indices check in
+    // exponents check in
     for (arma::uword i = 0; i < dimension / 2; i++) {
       arma::uvec X = arma::zeros<arma::uvec>(dimension);
       arma::uvec P = arma::zeros<arma::uvec>(dimension);
@@ -200,7 +200,7 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      const md::State initial_cwa(initial, grid, range, masses);
+      const cwa::State initial_cwa(initial, grid, range, masses);
 
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),

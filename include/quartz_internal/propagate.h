@@ -49,7 +49,7 @@ operator<<(const OperatorWrapper<Operator, State, Potential> & A,
 
     //OperatorWrapper requires returning of Propagator
     return [a, b](const State state,
-                    const double dt) -> State {
+                  const double dt) -> State {
       const State intermediate_state = a(state, dt);
       return b(intermediate_state, dt);
     };

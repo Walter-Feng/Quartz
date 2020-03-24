@@ -14,12 +14,12 @@ namespace polynomial {
 template<typename T>
 struct Term {
   T coef;
-  lvec indices;
+  lvec exponents;
 
   template<typename U>
   std::common_type_t<T, U> at(const arma::Col<U> & position) const {
 
-    if (position.n_elem != this->indices.n_elem) {
+    if (position.n_elem != this->exponents.n_elem) {
       throw Error(
           "Different dimension between the position and polynomial term");
     }
@@ -27,10 +27,10 @@ struct Term {
     auto result = std::common_type_t<T, U>(1.0);
 
     for (arma::uword i = 0; i < position.n_elem; i++) {
-      if(this->indices(i) == 0)
+      if(this->exponents(i) == 0)
         continue;
 
-      result *= std::pow(position(i), this->indices(i));
+      result *= std::pow(position(i), this->exponents(i));
     }
 
     return this->coef * result;
@@ -38,48 +38,48 @@ struct Term {
 
   inline
   Term() :
-  coef(0.0),
-  indices() {}
+      coef(0.0),
+      exponents() {}
 
   explicit
   inline
   Term(const arma::uword dim, const T coef = T(0.0)) :
       coef(coef),
-      indices(arma::zeros<lvec>(dim)) {}
+      exponents(arma::zeros<lvec>(dim)) {}
 
   inline
   Term(const T coef, const lvec & indices) :
       coef(coef),
-      indices(indices) {}
+      exponents(indices) {}
 
   inline
   Term(const T coef, const arma::uvec & indices) :
       coef(coef),
-      indices(arma::conv_to<lvec>::from(indices)) {}
+      exponents(arma::conv_to<lvec>::from(indices)) {}
 
   arma::uword dim() const {
-    return this->indices.n_elem;
+    return this->exponents.n_elem;
   }
 
   template<typename U>
   Term<std::common_type_t<T, U>>
   scale(const arma::Col<U> & scaling) const {
-    return {this->at(scaling), this->indices};
+    return {this->at(scaling), this->exponents};
   }
 
   template<typename U>
   bool is_same_term(const Term<U> & term) const {
-    if (this->indices == term.indices) return true;
+    if (this->exponents == term.exponents) return true;
 
     return false;
   }
 
   inline
   Term<T> derivative(const arma::uword index) const {
-    if (this->indices(index) == 0) {
+    if (this->exponents(index) == 0) {
       return {T{0.}, arma::zeros<lvec>(this->dim())};
     } else {
-      lvec new_indices = this->indices;
+      lvec new_indices = this->exponents;
       new_indices(index) -= 1;
       return {this->coef * (new_indices(index) + 1), new_indices};
     }
@@ -87,7 +87,7 @@ struct Term {
 
   inline
   Term<T> derivative(const arma::uvec & index) const {
-    if (index.n_elem != this->indices.n_elem) {
+    if (index.n_elem != this->exponents.n_elem) {
       throw Error("Derivative operator out of bound");
     }
 
@@ -104,15 +104,15 @@ struct Term {
 
   template<typename U>
   auto differentiate(const U & function) const {
-    if(arma::min(this->indices) < 0) {
+    if(arma::min(this->exponents) < 0) {
       throw Error("Quartz does not support integration operator");
     }
-    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(this->indices)) * this->coef;
+    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(this->exponents)) * this->coef;
   }
 
   inline
   Term<T> pow(const arma::uword power) const {
-    return {std::pow(this->coef, power), this->indices * power};
+    return {std::pow(this->coef, power), this->exponents * power};
   }
 
 
@@ -123,75 +123,75 @@ struct Term {
 
 } // namespace polynomial
 
-// The Polynomial struct is stored as a list of indices and the corresponding
-// coefficients. The indices are stored column-wise.
+// The Polynomial struct is stored as a list of exponents and the corresponding
+// coefficients. The exponents are stored column-wise.
 
 template<typename T>
 struct Polynomial {
 public:
 
   arma::Col<T> coefs;
-  lmat indices;
+  lmat exponents;
 
   inline
   Polynomial(void) :
       coefs(),
-      indices() {}
+      exponents() {}
 
   inline
-  Polynomial(const arma::Col<T> & coefs, const lmat & indices) :
+  Polynomial(const arma::Col<T> & coefs, const lmat & exponents) :
       coefs(coefs),
-      indices(indices) {
-    if (coefs.n_elem != indices.n_cols) {
+      exponents(exponents) {
+    if (coefs.n_elem != exponents.n_cols) {
       throw Error(
-          "the number between coefficients and the indices is not consistent");
+          "the number between coefficients and the exponents is not consistent");
     }
   }
 
   inline
   Polynomial(const polynomial::Term<T> & term) :
       coefs(arma::Col<T>{term.coef}),
-      indices(lmat(term.indices)) {}
+      exponents(lmat(term.exponents)) {}
 
   inline
   Polynomial(const Polynomial<T> & term) :
       coefs(term.coefs),
-      indices(term.indices) {}
+      exponents(term.exponents) {}
 
   inline
   Polynomial(const arma::uword dim, const T coef = 0.0) :
       coefs(arma::Col<T>{coef}),
-      indices(arma::zeros<lmat>(dim, 1)) {}
+      exponents(arma::zeros<lmat>(dim, 1)) {}
 
   inline
   polynomial::Term<T> term(arma::uword index) const {
     if (index >= this->coefs.n_elem) {
       throw Error("The specified polynomial term does not exist");
     }
-    return polynomial::Term<T>{this->coefs(index), this->indices.col(index)};
+    return polynomial::Term<T>{this->coefs(index), this->exponents.col(index)};
   }
 
   inline
   arma::uword dim() const {
-    return this->indices.n_rows;
+    return this->exponents.n_rows;
   }
 
   inline
   long long grade() const {
-    return arma::max(arma::sum(this->indices));
+    return arma::max(arma::sum(this->exponents));
   }
 
   template<typename U>
   std::common_type_t<T, U> at(const arma::Col<U> & position) const {
 
-    if (position.n_elem != this->indices.n_rows) {
+    if (position.n_elem != this->exponents.n_rows) {
       throw Error(
           "Different dimension between the position and polynomial term");
     };
 
     auto result = std::common_type_t<T, U>(0.0);
 
-    for (arma::uword i = 0; i < this->indices.n_cols; i++) {
+    for (arma::uword i = 0; i < this->exponents.n_cols; i++) {
       const polynomial::Term<T> term = this->term(i);
       result += term.at(position);
     }
@@ -266,7 +266,7 @@ public:
             -> Polynomial<std::common_type_t<T, U>> {
 
           const arma::uword dim = term.dim();
-          const auto & indices = term.indices;
+          const auto & indices = term.exponents;
 
           auto result = Polynomial<std::common_type_t<T, U>>(dim);
 
@@ -335,7 +335,7 @@ public:
           polynomial_list[0].dim(), 1.0);
 #pragma omp parallel for
       for (arma::uword i = 0; i < dim; i++) {
-        result *= polynomial_list[i].pow(term.indices(i));
+        result *= polynomial_list[i].pow(term.exponents(i));
       }
 
       return term->coef * result;
@@ -353,7 +353,7 @@ public:
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
   operator+(const Polynomial<U> & B) const {
-    const lmat new_indices = arma::join_rows(this->indices, B.indices);
+    const lmat new_indices = arma::join_rows(this->exponents, B.exponents);
     const auto converted_this_coefs =
         arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
     const auto converted_B_coefs =
@@ -369,8 +369,8 @@ public:
   Polynomial<std::common_type_t<T, U>> operator+(const U B) const {
 
     const lvec dummy_indices = arma::zeros<lvec>(
-        this->indices.n_rows);
-    const lmat new_indices = arma::join_rows(this->indices,
+        this->exponents.n_rows);
+    const lmat new_indices = arma::join_rows(this->exponents,
                                              dummy_indices);
     const arma::Col<std::common_type_t<T,U>> converted_coefs =
         arma::conv_to<arma::Col<std::common_type_t<T,U>>>::from(this->coefs);
@@ -383,7 +383,7 @@ public:
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
   operator+(const polynomial::Term<U> & B) const {
-    const lmat new_indices = arma::join_rows(this->indices, B.indices);
+    const lmat new_indices = arma::join_rows(this->exponents, B.exponents);
     const auto converted_this_coefs =
         arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
     const auto converted_B_coef = arma::Col<std::common_type_t<T, U>>{B.coef};
@@ -396,8 +396,8 @@ public:
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
   operator*(const polynomial::Term<U> & B) const {
-    lmat new_indices = this->indices;
-    new_indices.each_col() += B.indices;
+    lmat new_indices = this->exponents;
+    new_indices.each_col() += B.exponents;
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = this->coefs * B.coef;
 
@@ -418,7 +418,7 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator*(const U B) const {
-    return Polynomial<std::common_type_t<T, U>>{this->coefs * B, this->indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{this->coefs * B, this->exponents}.clean();
   }
 
   template<typename U>
@@ -440,8 +440,8 @@ public:
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
   operator/(const polynomial::Term<T> & B) const {
-    lmat new_indices = this->indices;
-    new_indices.each_col() -= B.indices;
+    lmat new_indices = this->exponents;
+    new_indices.each_col() -= B.exponents;
     const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
     return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
@@ -453,7 +453,7 @@ public:
     if(non_zero.n_elem == 0) {
       return Polynomial<T>(this->dim());
     }
-    return Polynomial<T>(this->coefs.rows(non_zero), this->indices.cols(non_zero));
+    return Polynomial<T>(this->coefs.rows(non_zero), this->exponents.cols(non_zero));
   }
 
   std::string to_string(const int precision = 3,
@@ -469,12 +469,12 @@ public:
     } else {
       result += format(coefs(0), width, precision);
     }
-    for(arma::uword j=0; j<this->indices.n_rows; j++) {
+    for(arma::uword j=0; j<this->exponents.n_rows; j++) {
       result =
-          result + variables[0] + "^" + std::to_string(this->indices(j,0)) + " ";
+          result + variables[0] + "^" + std::to_string(this->exponents(j, 0)) + " ";
     }
 
-    for(arma::uword i=1; i<this->indices.n_cols; i++) {
+    for(arma::uword i=1; i<this->exponents.n_cols; i++) {
 
       if(coefs(i) < 0) {
         result += "+ ";
@@ -487,9 +487,9 @@ public:
       } else {
         result += format(coefs(i), width, precision);
       }
-      for(arma::uword j=0; j<this->indices.n_rows; j++) {
+      for(arma::uword j=0; j<this->exponents.n_rows; j++) {
         result =
-            result + variables[i] + "^" + std::to_string(this->indices(j,i)) + " ";
+            result + variables[i] + "^" + std::to_string(this->exponents(j, i)) + " ";
       }
 
     }

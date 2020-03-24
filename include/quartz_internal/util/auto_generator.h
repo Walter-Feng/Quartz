@@ -29,9 +29,9 @@ hamiltonian(const math::Polynomial<T> & potential, const arma::vec & masses) {
 
   const auto potential_part =
       math::Polynomial<T>(potential.coefs,
-                          arma::join_cols(potential.indices,
+                          arma::join_cols(potential.exponents,
                                           arma::zeros<lmat>(dim,
-                                                            potential.indices.n_cols)));
+                                                            potential.exponents.n_cols)));
 
   return potential_part + kinetic_energy<T>(dim, masses);
 }

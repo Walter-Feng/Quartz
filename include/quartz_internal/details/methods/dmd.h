@@ -23,7 +23,7 @@ arma::mat effective_force(const Potential & potential,
       const auto p_j = j + points.n_rows / 2;
       math::Polynomial<double> correction_term =
           math::Polynomial<double>(points.n_rows,std::pow(beta / masses(j), 2));
-      correction_term.indices(p_j,0) = 2;
+      correction_term.exponents(p_j, 0) = 2;
 
       result(j, i) = -potential.derivative(j).at(position)
                      + potential.derivative(j).derivative(j).derivative(j).at(
@@ -38,7 +38,7 @@ arma::mat effective_force(const Potential & potential,
 
 }
 
-using State = md::State;
+using State = cwa::State;
 
 
 template<typename Potential>

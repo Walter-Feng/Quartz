@@ -14,7 +14,7 @@ TEST_CASE("WD Test") {
     const Polynomial<double> potential = Polynomial<double>(arma::vec{0.5},
                                                             lvec{2});
 
-    const md::State test_state = wd::State(
+    const cwa::State test_state = wd::State(
         GaussianWithPoly(real_space.wigner_transform()),
         arma::uvec{20, 20},
         arma::mat{{-5., 5.},

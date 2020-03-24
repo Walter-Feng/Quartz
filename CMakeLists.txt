@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.7)
 
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
-endif()
+endif ()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -20,7 +20,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(quartz SHARED
-            src/wrapper.cpp
+        src/wrapper.cpp
         )
 
 ####################
@@ -35,22 +35,22 @@ find_package(
         REQUIRED
 )
 
-if( ${ARMADILLO_FOUND} )
+if (${ARMADILLO_FOUND})
     message("Found Armadillo Library,")
     message("     ARMADILLO_VERSION: " ${ARMADILLO_VERSION_STRINcatchG})
     message("     ARMADILLO_LIBRARIES   : " ${ARMADILLO_LIBRARIES})
     message("     ARMADILLO_INCLUDE_DIRS: " ${ARMADILLO_INCLUDE_DIRS})
-endif()
+endif ()
 
 ######OpenMP######
 
 FIND_PACKAGE(OpenMP)
 
-if(OPENMP_FOUND)
+if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+endif ()
 
 
 include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
@@ -90,14 +90,13 @@ target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
 
 
-
 #######################
 # Compile Executables #
 #######################
 
 option(HAVE_EXE "Have Executables" ON)
 
-if(HAVE_EXE)
+if (HAVE_EXE)
 
     option(ARGS_BUILD_EXAMPLE OFF)
     option(ARGS_BUILD_UNITTESTS OFF)
@@ -107,14 +106,38 @@ if(HAVE_EXE)
     target_link_libraries(quartz args)
     add_definitions(-DHAVE_ARGS)
 
-    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-    add_executable(quartz.exe
+    ######Boost######
+
+    find_package(
+            Boost
+            1.45.0
+    )
+
+    if (${Boost_FOUND})
+        add_executable(quartz.exe
                 src/main.cpp
-            )
+                src/file_system/json_parse.cpp
+                src/util/ptree.cpp
+                src/util/resolve.cpp
+                src/parse/math/polynomial.cpp
+                src/parse/math/gaussian.cpp
+                src/parse/methods/cwa.cpp
+                )
+
+        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+        include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR})
+
+        target_link_libraries(quartz ${Boost_LIBRARIES})
+
+    else ()
+        add_executable(quartz.exe
+                src/main_without_boost.cpp
+                )
+    endif ()
 
     target_link_libraries(quartz.exe quartz)
-
 
     add_executable(quartz_expectation
             src/expectation.cpp
@@ -122,13 +145,13 @@ if(HAVE_EXE)
 
     target_link_libraries(quartz_expectation quartz)
 
-endif()
+endif ()
 
 ####################
 #       Test       #
 ####################
 
-set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test)
 
 add_executable(test_core
         test/printer_test.cpp
@@ -169,4 +192,4 @@ add_executable(test_methods
 target_link_libraries(test_methods catch2 quartz)
 
 add_test(NAME UNITTEST_math
-         COMMAND bin/test_math)
+        COMMAND bin/test_math)

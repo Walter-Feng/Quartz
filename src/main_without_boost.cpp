@@ -1,12 +1,9 @@
 #include <quartz>
 #include <args.hxx>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
-int main(const int argc, const char * argv[]) {
+int main(const int argc, const char* argv[]) {
 
   using namespace quartz;
-  namespace ptree = boost::property_tree;
 
   args::ArgumentParser parser("This is a simple quartz interface "
                               "that helps you construct quick simulation "
@@ -66,9 +63,9 @@ int main(const int argc, const char * argv[]) {
                                         {'p', "print_level"}
   );
 
-//  TODO: enable input when introducing boost::property_tree
-  args::Positional<std::string> input_flag(parser, "input",
-                                           "The input file (in json format)");
+  //TODO: enable input when introducing boost::property_tree
+//  args::Positional<std::string> input(parser, "input",
+//                                      "The input file (in json format)");
 
   args::PositionalList<double> options(parser, "options",
                                        "The options some of the methods would require. "
@@ -93,23 +90,11 @@ int main(const int argc, const char * argv[]) {
     return 1;
   }
 
-  ///////////////////// Read Input File /////////////////////
-
-  if (input_flag) {
-
-    ptree::ptree input;
-
-    ptree::read_json(args::get(input_flag), input);
-
-    const std::string method = input.get("method", "dvr");
-    input.get_optional<std::string>("method");
 
 
-  }
+  ///////////////////// Global Parameters /////////////////////
 
-    ///////////////////// Global Parameters /////////////////////
-
-    arma::uword grid_size = 30;
+  arma::uword grid_size = 30;
   if (grid_flag) {
     grid_size = args::get(grid_flag);
   }
@@ -172,26 +157,28 @@ int main(const int argc, const char * argv[]) {
       const auto result = propagate(initial_state, op, wrapper, potential,
                                     generic_printer<method::dvr::State>,
                                     steps, dt, print_level);
-    } else if (method == "cwa") {
-      const method::cwa::State initial_state =
-          method::cwa::State(initial_wf.wigner_transform(),
-                             arma::uvec{grid_size, grid_size},
-                             arma::mat{{-span, span},
+    }
+    else if (method == "cwa") {
+      const method::md::State initial_state =
+          method::md::State(initial_wf.wigner_transform(),
+                            arma::uvec{grid_size, grid_size},
+                            arma::mat{{-span, span},
                                       {-span, span}},
-                             arma::vec{mass});
+                            arma::vec{mass});
 
-      const auto op = method::cwa::Operator(initial_state, potential);
+      const auto op = method::md::Operator(initial_state, potential);
 
       const auto wrapper =
-          math::runge_kutta_4<method::cwa::Operator<math::Polynomial<double>>,
-              method::cwa::State,
+          math::runge_kutta_4<method::md::Operator<math::Polynomial<double>>,
+              method::md::State,
               math::Polynomial<double>>;
 
       const auto result = propagate(initial_state, op, wrapper, potential,
-                                    generic_printer<method::cwa::State>,
+                                    generic_printer<method::md::State>,
                                     steps, dt, print_level);
-    } else if (method == "cwa_smd") {
-      if (!options) {
+    }
+    else if (method == "cwa_smd") {
+      if(!options) {
         throw Error("grade for cwa_smd not specified");
       }
       const int grade = args::get(options)[0] + 1;
@@ -212,7 +199,8 @@ int main(const int argc, const char * argv[]) {
       const auto result = propagate(initial_state, op, wrapper, potential,
                                     generic_printer<method::cwa_smd::State>,
                                     steps, dt, print_level);
-    } else {
+    }
+    else {
       throw Error("Method " + method + " is not supported.");
     }
   } else { // perform DVR
