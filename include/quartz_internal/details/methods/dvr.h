@@ -127,7 +127,7 @@ public:
       coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
       grid(grid),
       ranges(range),
-      masses(arma::ones<arma::vec>(arma::prod(grid))),
+      masses(arma::ones<arma::vec>(grid.n_elem)),
       positional_matrices(dvr::details::position_matrices(points)),
       momentum_matrices(
           dvr::details::momentum_matrices(grid, range, range.n_rows)) {
@@ -143,7 +143,7 @@ public:
       coefs(coefs),
       grid(grid),
       ranges(range),
-      masses(arma::ones<arma::vec>(arma::prod(grid))),
+      masses(arma::ones<arma::vec>(grid.n_elem)),
       positional_matrices(dvr::details::position_matrices(points)),
       momentum_matrices(
           dvr::details::momentum_matrices(grid, range, range.n_rows)) {

@@ -23,11 +23,11 @@ void print(const arma::Row<T> & arma,
            const int width = 10,
            const int precision = 6,
            const std::string aligned = ">") {
-    for (arma::uword j = 0; j < arma.n_cols; j++) {
-      const std::string formatted =
-          fmt::format("{:.{}}", arma(j), precision);
-      fmt::print("{:" + aligned + "{}}", formatted, width);
-    }
+  for (arma::uword j = 0; j < arma.n_cols; j++) {
+    const std::string formatted =
+        fmt::format("{:.{}}", arma(j), precision);
+    fmt::print("{:" + aligned + "{}}", formatted, width);
+  }
 }
 
 template<typename T>
@@ -176,7 +176,7 @@ Printer<State> expectation_printer(const std::vector<Function> & observables) {
                 "The state does not support exporting arbitrary expectation values, "
                 "therefore not support generic printers");
 
-  return [&observables](const State & state,
+  return [observables](const State & state,
                         const arma::uword index,
                         const double time,
                         const int print_level = 1,
@@ -245,9 +245,25 @@ Printer<State> mute = [](const State &,
                          const arma::uword,
                          const double,
                          const int,
-                         const bool) -> void {
+                         const bool) -> int {
 
+  return 0;
 };
 
+template<typename State>
+Printer<State> operator<<(const Printer<State> a, const Printer<State> b) {
+  return [a, b](const State & state,
+                  const arma::uword index,
+                  const double time,
+                  const int print_level = 1,
+                  const bool print_header = false) -> int {
+
+    const int a_length = a(state, index, time, print_level, print_header);
+    const int b_length = b(state, index, time, print_level, print_header);
+
+    return std::max(a_length, b_length);
+
+  };
+}
 
 #endif //QUARTZ_PRINTER_H

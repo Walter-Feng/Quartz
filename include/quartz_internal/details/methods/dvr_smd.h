@@ -95,15 +95,16 @@ public:
   arma::vec scaling;
 
   // Establish an easy way to construct your State
-  template<typename PhaseSpaceDistribution>
-  State(const PhaseSpaceDistribution & initial,
+  template<typename WaveFunction>
+  State(const WaveFunction & initial,
         const arma::uvec & grid,
         const arma::mat & range,
         const arma::vec & masses,
         const arma::uword grade) :
       dvr_state(initial,
                 grid.rows(0, grid.n_elem / 2 - 1),
-                range.rows(0, grid.n_elem / 2 - 1)),
+                range.rows(0, grid.n_elem / 2 - 1),
+                masses),
       masses(masses),
       grade(grade),
       expectation_table(math::space::grids_to_table(
@@ -146,21 +147,22 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      const cwa::State initial_cwa(initial, grid, range, masses);
+      const cwa::State initial_cwa(initial.wigner_transform(), grid, range, masses);
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),
                                initial_cwa, this->scaling);
     }
   }
 
-  template<typename PhaseSpaceDistribution>
-  State(const PhaseSpaceDistribution & initial,
+  template<typename WaveFunction>
+  State(const WaveFunction & initial,
         const arma::uvec & grid,
         const arma::mat & range,
         const arma::uword grade) :
       dvr_state(initial,
                 grid.rows(0, grid.n_elem / 2 - 1),
-                range.rows(0, grid.n_elem / 2 - 1)),
+                range.rows(0, grid.n_elem / 2 - 1),
+                masses),
       masses(arma::ones<arma::vec>(grid.n_rows / 2)),
       grade(grade),
       expectation_table(math::space::grids_to_table(
@@ -200,7 +202,7 @@ public:
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      const cwa::State initial_cwa(initial, grid, range, masses);
+      const cwa::State initial_cwa(initial.wigner_transform(), grid, range, masses);
 
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),
@@ -275,8 +277,26 @@ public:
     return state;
   }
 
+  arma::vec expectation(const std::vector<math::Polynomial<double>> & polynomials) const {
+    const auto transformed = this->dvr_state.wigner_transform();
+
+    arma::vec result(polynomials.size());
+
+#pragma omp parallel for
+    for (arma::uword i = 0; i < result.n_elem; i++) {
+      result(i) = details::at_search(polynomials[i],
+                                     transformed,
+                                     this->expectations,
+                                     this->expectation_table,
+                                     this->scaling,
+                                     this->grade);
+    }
+
+    return result;
+  }
+
   template<typename T>
-  auto expectation(const math::Polynomial <T> & polynomial) {
+  auto expectation(const math::Polynomial <T> & polynomial) const {
     return details::at_search(polynomial,
                               this->dvr_state.wigner_transform(),
                               this->expectations,
@@ -292,12 +312,14 @@ public:
   math::Polynomial<double> potential;
   math::Polynomial<double> H;
   std::vector<math::Polynomial < double>> operators;
+  dvr::Operator dvr_operator;
 
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
       potential(potential),
       H(hamiltonian(potential, state.masses).scale(state.scaling)),
-      operators() {
+      operators(),
+      dvr_operator(state.dvr_state, potential) {
 
     std::vector<math::Polynomial<double>>
         op(std::pow(state.grade, state.dim() * 2));
@@ -369,69 +391,67 @@ OperatorWrapper <Operator, State, Potential>
         "This wrapper is only valid for mixed type");
   }
 
-  if constexpr(has_time_evolve < Potential, void(const double &)>::value) {
-  return [&liouville_operator, &potential](const State & state,
-                                           const double dt) -> State {
+  if constexpr(has_time_evolve<Potential, void(const double &)>::value) {
+    return [&liouville_operator, &potential](const State & state,
+                                             const double dt) -> State {
 
-    Potential potential_at_half_dt = potential;
-    potential_at_half_dt.time_evolve(0.5 * dt);
+      Potential potential_at_half_dt = potential;
+      potential_at_half_dt.time_evolve(0.5 * dt);
 
-    Potential potential_at_dt = potential;
-    potential_at_dt.time_evolve(dt);
+      Potential potential_at_dt = potential;
+      potential_at_dt.time_evolve(dt);
 
-    const Propagator<dvr::State>
-        dvr_propagator =
-        math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
-            state.dvr_state, potential);
-    const auto dvr_propagator_at_half_dt =
-        math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
-            state.dvr_state, potential_at_half_dt);
-    const auto dvr_propagator_at_dt =
-        math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
-            state.dvr_state, potential_at_dt);
+      const Propagator<dvr::State>
+          dvr_propagator =
+          math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
+              liouville_operator.dvr_operator, potential);
+      const auto dvr_propagator_at_half_dt =
+          math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
+              liouville_operator.dvr_operator, potential_at_half_dt);
+      const auto dvr_propagator_at_dt =
+          math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
+              liouville_operator.dvr_operator, potential_at_dt);
 
-    const Operator operator_at_half_dt = Operator(state,
-                                                  potential_at_half_dt);
-    const Operator operator_at_dt = Operator(state, potential_at_dt);
+      const Operator operator_at_half_dt = Operator(state,
+                                                    potential_at_half_dt);
+      const Operator operator_at_dt = Operator(state, potential_at_dt);
 
-    const State k1 = liouville_operator(state) * dt;
-    State k1_with_dvr_at_half_dt = k1;
-    k1_with_dvr_at_half_dt.dvr_state = dvr_propagator(k1.dvr_state, dt / 2.0);
-    const State k2 =
-        operator_at_half_dt(k1_with_dvr_at_half_dt * 0.5 + state) * dt;
-    const State k3 =
-        operator_at_half_dt(k1_with_dvr_at_half_dt * 0.5 + state) * dt;
-    State k3_with_dvr_at_half_dt = k3;
-    k3_with_dvr_at_half_dt.dvr_state = dvr_propagator_at_half_dt(k3.dvr_state,
-                                                                 dt / 2.0);
-    const State k4 = operator_at_dt(state + k3_with_dvr_at_half_dt) * dt;
+      const State k1 = liouville_operator(state) * dt;
+      State k1_with_dvr_at_half_dt = k1;
+      k1_with_dvr_at_half_dt.dvr_state = dvr_propagator(k1.dvr_state, dt / 2.0);
+      const State k2 =
+          operator_at_half_dt(k1_with_dvr_at_half_dt * 0.5 + state) * dt;
+      const State k3 =
+          operator_at_half_dt(k1_with_dvr_at_half_dt * 0.5 + state) * dt;
+      State k3_with_dvr_at_half_dt = k3;
+      k3_with_dvr_at_half_dt.dvr_state = dvr_propagator_at_half_dt(k3.dvr_state,
+                                                                   dt / 2.0);
+      const State k4 = operator_at_dt(state + k3_with_dvr_at_half_dt) * dt;
 
-    return state + k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
-           k4 * (1.0 / 6.0);
-  };
-}
+      return state + k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
+             k4 * (1.0 / 6.0);
+    };
+  } else {
 
-  else {
+    return [&liouville_operator, &potential](const State & state,
+                                             const double dt) -> State {
+      const auto dvr_propagator =
+          math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
+              liouville_operator.dvr_operator, potential);
 
-  return [&liouville_operator, &potential](const State & state,
-                                           const double dt) -> State {
-    const auto dvr_propagator =
-        math::schrotinger_wrapper<dvr::Operator, dvr::State, Potential>(
-            state.dvr_state, potential);
+      const State k1 = liouville_operator(state) * dt;
+      State k1_with_dvr_at_half_dt = k1;
+      k1_with_dvr_at_half_dt.dvr_state = dvr_propagator(k1.dvr_state, dt / 2.0);
+      const State k2 = liouville_operator(k1 * 0.5 + state) * dt;
+      const State k3 = liouville_operator(k2 * 0.5 + state) * dt;
+      State k3_with_dvr_at_half_dt = k3;
+      k3_with_dvr_at_half_dt.dvr_state = dvr_propagator(k3.dvr_state, dt / 2.0);
+      const State k4 = liouville_operator(state + k3) * dt;
 
-    const State k1 = liouville_operator(state) * dt;
-    State k1_with_dvr_at_half_dt = k1;
-    k1_with_dvr_at_half_dt.dvr_state = dvr_propagator(k1.dvr_state, dt / 2.0);
-    const State k2 = liouville_operator(k1 * 0.5 + state) * dt;
-    const State k3 = liouville_operator(k2 * 0.5 + state) * dt;
-    State k3_with_dvr_at_half_dt = k3;
-    k3_with_dvr_at_half_dt.dvr_state = dvr_propagator(k3.dvr_state, dt / 2.0);
-    const State k4 = liouville_operator(state + k3) * dt;
-
-    return state + k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
-           k4 * (1.0 / 6.0);
-  };
-}
+      return state + k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +
+             k4 * (1.0 / 6.0);
+    };
+  }
 };
 
 } // namespace dvr_smd

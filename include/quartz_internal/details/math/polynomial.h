@@ -462,7 +462,7 @@ public:
     const std::vector<std::string> variables =
         util::variable_names(this->dim());
 
-    std::string result = "";
+    std::string result = " ";
 
     if(width <= 0) {
       result += fmt::format("{:.{}}", this->coefs(0), precision);
@@ -471,7 +471,7 @@ public:
     }
     for(arma::uword j=0; j<this->exponents.n_rows; j++) {
       result =
-          result + variables[0] + "^" + std::to_string(this->exponents(j, 0)) + " ";
+          result + variables[j] + "^" + std::to_string(this->exponents(j, 0)) + " ";
     }
 
     for(arma::uword i=1; i<this->exponents.n_cols; i++) {
@@ -489,7 +489,7 @@ public:
       }
       for(arma::uword j=0; j<this->exponents.n_rows; j++) {
         result =
-            result + variables[i] + "^" + std::to_string(this->exponents(j, i)) + " ";
+            result + variables[j] + "^" + std::to_string(this->exponents(j, i)) + " ";
       }
 
     }

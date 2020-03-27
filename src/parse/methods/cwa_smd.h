@@ -1,5 +1,5 @@
-#ifndef PARSE_METHODS_CWA_H
-#define PARSE_METHODS_CWA_H
+#ifndef PARSE_METHODS_CWA_SMD_H
+#define PARSE_METHODS_CWA_SMD_H
 
 #include <quartz>
 #include <boost/property_tree/ptree.hpp>
@@ -11,10 +11,10 @@ namespace quartz {
 
 namespace ptree = boost::property_tree;
 
-template<typename Potential, typename Initial>
-ptree::ptree cwa(const ptree::ptree & input,
-                 const Potential & potential,
-                 const Initial & initial) {
+template<typename Initial>
+ptree::ptree cwa_smd(const ptree::ptree & input,
+                     const math::Polynomial<double> & potential,
+                     const Initial & initial) {
 
   const arma::uvec grid =
       arma::uvec(util::get_list<arma::uword>(input.get_child("grid")));
@@ -26,15 +26,19 @@ ptree::ptree cwa(const ptree::ptree & input,
 
   const auto steps = input.get<arma::uword>("steps");
   const auto dt = input.get<double>("dt");
+  const arma::uword grade = input.get<double>("grade", 4) + 1;
 
   if (input.get_child_optional("mass")) {
     masses = arma::vec(util::get_list<double>(input.get_child("mass")));
   }
 
-  method::cwa::State initial_state(initial.wigner_transform(), grid, range, masses);
-  method::cwa::Operator<Potential> op(initial_state, potential);
+  method::cwa_smd::State initial_state(initial.wigner_transform(), grid, range, masses, grade);
+  method::cwa_smd::Operator op(initial_state, potential);
   auto wrapper =
-      math::runge_kutta_4<method::cwa::Operator<Potential>, method::cwa::State, Potential>;
+      math::runge_kutta_4<
+          method::cwa_smd::Operator,
+          method::cwa_smd::State,
+          math::Polynomial<double>>;
 
   ptree::ptree result;
 
@@ -48,4 +52,4 @@ ptree::ptree cwa(const ptree::ptree & input,
 
 }
 
-#endif //PARSE_METHODS_CWA_H
+#endif

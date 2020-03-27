@@ -118,6 +118,7 @@ if (HAVE_EXE)
     if (${Boost_FOUND})
         add_executable(quartz.exe
                 src/main.cpp
+                src/run.cpp
                 src/file_system/json_parse.cpp
                 src/util/ptree.cpp
                 src/util/resolve.cpp
@@ -174,11 +175,17 @@ add_executable(test_mathematics
 
 target_link_libraries(test_mathematics catch2 quartz)
 
+add_test(NAME UNITTEST_math
+        COMMAND test/test_math)
+
 add_executable(test_utils
         test/utils/check_member_test.cpp
         test/utils/elementary_function_operator.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
+
+add_test(NAME UNITTEST_utils
+        COMMAND test/test_utils)
 
 add_executable(test_methods
         test/details/methods/dvr_test.cpp
@@ -191,5 +198,5 @@ add_executable(test_methods
 
 target_link_libraries(test_methods catch2 quartz)
 
-add_test(NAME UNITTEST_math
-        COMMAND bin/test_math)
+add_test(NAME UNITTEST_methods
+        COMMAND test/test_methods)

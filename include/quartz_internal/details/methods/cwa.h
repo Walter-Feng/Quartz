@@ -100,6 +100,10 @@ public:
 
 #pragma omp parallel for
     for(arma::uword i=0;i<result.n_elem;i++) {
+
+      if(function[i].dim() != this->dim() * 2) {
+        throw Error("The dimension of the function is invalid for the calculation of expectation");
+      }
       result(i) = arma::dot(at(function[i], this->points), weights) / arma::sum(weights);
     }
 

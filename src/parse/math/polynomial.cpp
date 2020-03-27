@@ -21,7 +21,6 @@ math::Polynomial<double> polynomial(const ptree::ptree & input) {
     return math::Polynomial<double>(coefs, exponents);
   }
 
-  __builtin_unreachable;
 }
 
 }

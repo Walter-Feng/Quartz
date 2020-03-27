@@ -1,7 +1,13 @@
 #include <quartz>
 #include <args.hxx>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include "run.h"
+#include "parse/math/polynomial.h"
+#include "parse/math/gaussian.h"
+#include "parse/methods/cwa.h"
 
 int main(const int argc, const char * argv[]) {
 
@@ -32,7 +38,8 @@ int main(const int argc, const char * argv[]) {
                                            "Currently supported methods: \n"
                                            "DVR(default), \n"
                                            "CWA, \n"
-                                           "CWA_SMD\n",
+                                           "CWA_SMD\n"
+                                           "DVR_SMD\n",
                                            {"method"});
 
   args::ValueFlag<arma::uword> grid_flag(parser, "grid",
@@ -101,9 +108,7 @@ int main(const int argc, const char * argv[]) {
 
     ptree::read_json(args::get(input_flag), input);
 
-    const std::string method = input.get("method", "dvr");
-    input.get_optional<std::string>("method");
-
+    return run(input);
 
   }
 
