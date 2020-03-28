@@ -8,8 +8,11 @@
  'Unfortunately', this library depends on several other external libraries, including:
  
  Armadillo (8.500.0 or later, Required externally)
+ 
  catchorg/Catch2
+ 
  Taywee/args
+ 
  fmtlib/fmt
  
  among which Armadillo is not integrated in the library.
