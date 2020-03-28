@@ -5,8 +5,20 @@
  It is also for the purpose of software-engineering practice.
  
  This header-only library uses C++17 standard. 
- There are currently two third-party libraries used, Armadillo and Catch2, 
- among which Armadillo is not integrated in the library. 
+ 'Unfortunately', this library depends on several other external libraries, including:
+ 
+ Armadillo (8.500.0 or later, Required externally)
+ catchorg/Catch2
+ Taywee/args
+ fmtlib/fmt
+ 
+ among which Armadillo is not integrated in the library.
+ (Special thanks to these libraries!) 
+ Boost is also utilised for 
+ json input/output for accompanying exectuables, through which you can quickly work on
+ small systems. Nevertheless, this repository is still designed as a header-only
+ library. And... well... currently there is no document provided.
+ 
  It also uses OpenMP for auto-parallelisation,
  while Armadillo already enables parallelisation for linear algebra calculations
  if it is linked to MKL or OpenBLAS.
@@ -22,7 +34,8 @@ $ make install
 which will have this library installed to `/usr/local` directory.
  
  It is designed fully capable with arbitrary dimensions, 
- with highly flexible modules such as several elementary functions enabling analytical calcuation, 
+ with highly flexible modules such as several elementary functions 
+ enabling analytical calcuation, 
  Runge-Kutta methods, automatic propagations and printing sections and a lot more, 
  aiming to minimize the effort for implementing a new method 
  or enhancing the already implemented ones. 
@@ -38,22 +51,22 @@ result, using DVR method for a harmonic potential, is as follows:
 ```
 Library: Quartz
 version: 0.0.1
-
-            Time |      Positional |        Momentum |
-======================================================
-                 0        0.99999998                 0
-              0.01        0.99994999     -0.0099991688
-              0.02        0.99980001      -0.019997312
-              0.03        0.99955008      -0.029993447
-              0.04         0.9992002      -0.039986586
-              0.05        0.99875041      -0.049975724
-              0.06        0.99820077      -0.059959865
-              0.07        0.99755132      -0.069938011
-              0.08        0.99680213      -0.079909163
-              0.09        0.99595328      -0.089872326
-               0.1        0.99500484      -0.099826503
+============================================================
+|Step|            Time |      Positional |        Momentum |
+============================================================
+     0         0.0000000        0.99999999    -1.1928157e-16
+     1              0.01        0.99994999     -0.0099998333
+     2              0.02            0.9998      -0.019998667
+     3              0.03        0.99955003        -0.0299955
+     4              0.04         0.9992001      -0.039989334
+     5              0.05        0.99875025      -0.049979169
+     6              0.06        0.99820053      -0.059964006
+     7              0.07        0.99755099      -0.069942847
+     8              0.08         0.9968017      -0.079914694
+     9              0.09        0.99595273      -0.089878549
+    10               0.1        0.99500416      -0.099833416
+============================================================
 
 Quartz terminated normally.
-```
 
-英语真菜.jpg
+```
