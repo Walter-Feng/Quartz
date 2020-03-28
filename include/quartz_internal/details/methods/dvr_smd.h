@@ -5,23 +5,6 @@ namespace method {
 namespace dvr_smd {
 namespace details {
 
-template<typename Potential>
-arma::mat force(const Potential & potential,
-                const arma::mat & positions) {
-  arma::mat result = arma::mat(arma::size(positions));
-
-#pragma omp parallel for
-  for (arma::uword i = 0; i < positions.n_cols; i++) {
-    const arma::vec position = positions.col(i);
-    for (arma::uword j = 0; j < positions.n_rows; j++) {
-      result(j, i) = -potential.derivative(j).at(position);
-    }
-  }
-
-  return result;
-}
-
-
 template<typename Function>
 auto expectation(const Function & function,
                  const arma::mat & points,
@@ -87,6 +70,8 @@ struct State {
 public:
   dvr::State dvr_state;
   arma::vec masses;
+  arma::uvec momentum_space_grid;
+  arma::mat momentum_space_range;
   arma::uword grade;
   arma::uvec expectation_table;
   arma::vec expectations;
@@ -106,6 +91,8 @@ public:
                 range.rows(0, grid.n_elem / 2 - 1),
                 masses),
       masses(masses),
+      momentum_space_grid(grid.rows(grid.n_elem / 2, grid.n_elem - 1)),
+      momentum_space_range(range.rows(grid.n_elem / 2, grid.n_elem - 1)),
       grade(grade),
       expectation_table(math::space::grids_to_table(
           grade * arma::ones<arma::uvec>(grid.n_elem))) {
@@ -123,11 +110,11 @@ public:
     this->positional_indices = arma::uvec(dimension / 2);
     this->momentum_indices = arma::uvec(dimension / 2);
 
-    const arma::vec ranges = range.col(1) - range.col(0);
-    this->scaling = ranges;
+    const arma::vec diff = range.col(1) - range.col(0);
+    this->scaling = diff;
 
 
-    // exponents check in
+    // indices check in
 #pragma omp parallel for
     for (arma::uword i = 0; i < dimension / 2; i++) {
       arma::uvec X = arma::zeros<arma::uvec>(dimension);
@@ -140,14 +127,16 @@ public:
           math::space::indices_to_index(P, this->expectation_table);
     }
 
+    const auto transformed = initial.wigner_transform();
+
+    const cwa::State initial_cwa(transformed, grid, range, masses);
+
     // expectations check in
-#pragma omp parallel for
     for (arma::uword i = 0; i < length; i++) {
       const lvec indices =
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
-      const cwa::State initial_cwa(initial.wigner_transform(), grid, range, masses);
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),
                                initial_cwa, this->scaling);
@@ -164,6 +153,8 @@ public:
                 range.rows(0, grid.n_elem / 2 - 1),
                 masses),
       masses(arma::ones<arma::vec>(grid.n_rows / 2)),
+      momentum_space_grid(grid.rows(grid.n_elem / 2, grid.n_elem - 1)),
+      momentum_space_range(range.rows(grid.n_elem / 2, grid.n_elem - 1)),
       grade(grade),
       expectation_table(math::space::grids_to_table(
           grade * arma::ones<arma::uvec>(grid.n_rows))) {
@@ -181,8 +172,8 @@ public:
     this->positional_indices = arma::uvec(dimension / 2);
     this->momentum_indices = arma::uvec(dimension / 2);
 
-    const arma::vec ranges = range.col(1) - range.col(0);
-    this->scaling = ranges;
+    const arma::vec diff = range.col(1) - range.col(0);
+    this->scaling = diff;
 
     // exponents check in
     for (arma::uword i = 0; i < dimension / 2; i++) {
@@ -196,13 +187,20 @@ public:
           math::space::indices_to_index(P, this->expectation_table);
     }
 
+    const auto transformed =
+        initial.wigner_transform(
+            this->momentum_space_grid,
+            this->momentum_space_range
+        );
+
+
+    const cwa::State initial_cwa(transformed, grid, range, masses);
+
     // expectations check in
     for (arma::uword i = 0; i < length; i++) {
       const lvec indices =
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
-
-      const cwa::State initial_cwa(initial.wigner_transform(), grid, range, masses);
 
       this->expectations(i) =
           details::expectation(math::polynomial::Term(1.0, indices),
@@ -213,6 +211,8 @@ public:
   inline
   State(const dvr::State & dvr_state,
         const arma::vec & masses,
+        const arma::uvec & grid,
+        const arma::mat & range,
         const arma::uvec & expectation_table,
         const arma::vec & expectations,
         const arma::uvec & positional_indices,
@@ -221,6 +221,8 @@ public:
         const arma::uword grade) :
       dvr_state(dvr_state),
       masses(masses),
+      momentum_space_grid(grid),
+      momentum_space_range(range),
       grade(grade),
       expectation_table(expectation_table),
       expectations(expectations),
@@ -232,6 +234,8 @@ public:
   State(const State & state) :
       dvr_state(state.dvr_state),
       masses(state.masses),
+      momentum_space_grid(state.momentum_space_grid),
+      momentum_space_range(state.momentum_space_range),
       grade(state.grade),
       expectation_table(state.expectation_table),
       expectations(state.expectations),
@@ -278,7 +282,10 @@ public:
   }
 
   arma::vec expectation(const std::vector<math::Polynomial<double>> & polynomials) const {
-    const auto transformed = this->dvr_state.wigner_transform();
+    const auto transformed = this->dvr_state.wigner_transform(
+        this->momentum_space_grid,
+        this->momentum_space_range
+    );
 
     arma::vec result(polynomials.size());
 
@@ -298,7 +305,10 @@ public:
   template<typename T>
   auto expectation(const math::Polynomial <T> & polynomial) const {
     return details::at_search(polynomial,
-                              this->dvr_state.wigner_transform(),
+                              this->dvr_state.wigner_transform(
+                                  this->momentum_space_grid,
+                                  this->momentum_space_range
+                              ),
                               this->expectations,
                               this->expectation_table,
                               this->scaling,
@@ -355,11 +365,16 @@ public:
     arma::vec expectation_change_list =
         arma::vec(arma::size(state.expectations));
 
+    const auto transformed = state.dvr_state.wigner_transform(
+        state.momentum_space_grid,
+        state.momentum_space_range
+    );
+
 #pragma omp parallel for
     for (arma::uword i = 0; i < expectation_change_list.n_elem; i++) {
       expectation_change_list(i) =
           details::at_search(this->operators[i],
-                             state.dvr_state.wigner_transform(),
+                             transformed,
                              state.expectations,
                              state.expectation_table,
                              state.scaling,
@@ -368,6 +383,8 @@ public:
 
     return State(state.dvr_state,
                  state.masses,
+                 state.momentum_space_grid,
+                 state.momentum_space_range,
                  state.expectation_table,
                  expectation_change_list,
                  state.positional_indices,
