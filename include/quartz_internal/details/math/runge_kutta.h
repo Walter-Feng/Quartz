@@ -91,7 +91,7 @@ OperatorWrapper<Operator, State, Potential>
                                            const double dt) -> State {
     const State k1 = liouville_operator(state) * dt;
     const State k2 = liouville_operator(k1 * 0.5 + state) * dt;
-    const State k3 = liouville_operator(k1 * 0.5 + state) * dt;
+    const State k3 = liouville_operator(k2 * 0.5 + state) * dt;
     const State k4 = liouville_operator(state + k3) * dt;
 
     return state + k1 * (1.0 / 6.0) + k2 * (1.0 / 3.0) + k3 * (1.0 / 3.0) +

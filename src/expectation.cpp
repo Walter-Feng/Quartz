@@ -1,18 +1,9 @@
 #include <quartz>
 #include <args.hxx>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-#include "run.h"
-#include "parse/math/polynomial.h"
-#include "parse/math/gaussian.h"
-#include "parse/methods/cwa.h"
-
 int main(const int argc, const char * argv[]) {
 
   using namespace quartz;
-  namespace ptree = boost::property_tree;
 
   args::ArgumentParser parser("This is a simple quartz interface "
                               "that helps you construct quick simulation "
@@ -38,8 +29,7 @@ int main(const int argc, const char * argv[]) {
                                            "Currently supported methods: \n"
                                            "DVR(default), \n"
                                            "CWA, \n"
-                                           "CWA_SMD\n"
-                                           "DVR_SMD\n",
+                                           "CWA_SMD\n",
                                            {"method"});
 
   args::ValueFlag<arma::uword> grid_flag(parser, "grid",
@@ -73,9 +63,15 @@ int main(const int argc, const char * argv[]) {
                                         {'p', "print_level"}
   );
 
-//  TODO: enable input when introducing boost::property_tree
-  args::Positional<std::string> input_flag(parser, "input",
-                                           "The input file (in json format)");
+  args::ValueFlag<int> expectation_grade_flag(parser, "Grade of expectation",
+                                              "The grade for the printing of "
+                                              "expectation values. "
+                                              "Default is 2.",
+                                              {'e', "expectation"});
+
+  //TODO: enable input when introducing boost::property_tree
+//  args::Positional<std::string> input(parser, "input",
+//                                      "The input file (in json format)");
 
   args::PositionalList<double> options(parser, "options",
                                        "The options some of the methods would require. "
@@ -100,21 +96,11 @@ int main(const int argc, const char * argv[]) {
     return 1;
   }
 
-  ///////////////////// Read Input File /////////////////////
 
-  if (input_flag) {
 
-    ptree::ptree input;
+  ///////////////////// Global Parameters /////////////////////
 
-    ptree::read_json(args::get(input_flag), input);
-
-    return run(input);
-
-  }
-
-    ///////////////////// Global Parameters /////////////////////
-
-    arma::uword grid_size = 30;
+  arma::uword grid_size = 30;
   if (grid_flag) {
     grid_size = args::get(grid_flag);
   }
@@ -124,6 +110,7 @@ int main(const int argc, const char * argv[]) {
   double dt = 0.01;
   double span = 5;
 
+  int expectation_grade = 2;
   int print_level = 2;
 
   auto initial_wf = math::Gaussian<cx_double>(arma::mat{1.}, arma::cx_vec{1});
@@ -154,7 +141,16 @@ int main(const int argc, const char * argv[]) {
   if (dt_flag) { dt = args::get(dt_flag); }
   if (span_flag) { span = args::get(span_flag); }
   if (step_flag) { steps = args::get(step_flag); }
+  if (expectation_grade_flag) {
+    expectation_grade = args::get(expectation_grade_flag);
+  }
   if (print_level_flag) { print_level = args::get(print_level_flag); }
+
+
+
+  ///////////////////// Auto generate /////////////////////
+
+  const auto observables = polynomial_observables(2, expectation_grade);
 
   ///////////////////// Method //////////////////////
   if (method_flag) {
@@ -175,7 +171,7 @@ int main(const int argc, const char * argv[]) {
               math::Polynomial<double>>;
 
       const auto result = propagate(initial_state, op, wrapper, potential,
-                                    generic_printer<method::dvr::State>,
+                                    expectation_printer<method::dvr::State>(observables),
                                     steps, dt, print_level);
     } else if (method == "cwa") {
       const method::cwa::State initial_state =
@@ -193,7 +189,7 @@ int main(const int argc, const char * argv[]) {
               math::Polynomial<double>>;
 
       const auto result = propagate(initial_state, op, wrapper, potential,
-                                    generic_printer<method::cwa::State>,
+                                    expectation_printer<method::cwa::State>(observables),
                                     steps, dt, print_level);
     } else if (method == "cwa_smd") {
       if (!options) {
@@ -215,7 +211,7 @@ int main(const int argc, const char * argv[]) {
               math::Polynomial<double>>;
 
       const auto result = propagate(initial_state, op, wrapper, potential,
-                                    generic_printer<method::cwa_smd::State>,
+                                    expectation_printer<method::cwa_smd::State>(observables),
                                     steps, dt, print_level);
     } else {
       throw Error("Method " + method + " is not supported.");
@@ -235,9 +231,10 @@ int main(const int argc, const char * argv[]) {
             math::Polynomial<double>>;
 
     const auto result = propagate(initial_state, op, wrapper, potential,
-                                  generic_printer<method::dvr::State>,
+                                  expectation_printer<method::dvr::State>(observables),
                                   steps, dt, print_level);
   }
 
   return 0;
 }
+

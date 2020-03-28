@@ -166,7 +166,7 @@ public:
   State operator+(const State & B) const {
     if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
         !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
-      throw Error("Different md states are being added");
+      throw Error("Different cwa states are being added");
     }
 
     return State(this->points + B.points, this->weights,
@@ -207,7 +207,7 @@ public:
 #pragma omp parallel for
     for (arma::uword i = 0; i < state.dim(); i++) {
       auto p_variable = math::Polynomial<double>(2 * state.dim(), 1.0);
-      p_variable.indices(state.dim() + i, 0) = 1;
+      p_variable.exponents(state.dim() + i, 0) = 1;
       const auto p_moyal_bracket =
           math::moyal_bracket(p_variable,
                               hamiltonian(potential, state.masses),
@@ -226,8 +226,8 @@ public:
     for(arma::uword i=0; i<state.covariances.n_rows; i++) {
       for(arma::uword j=0; j<state.covariances.n_cols; j++) {
         auto variable = math::Polynomial<double>(2*state.dim(), 1.0);
-        variable.indices(i,0) = 1;
-        variable.indices(j,0) = 1;
+        variable.exponents(i, 0) = 1;
+        variable.exponents(j, 0) = 1;
         const auto variable_moyal_bracket =
             math::moyal_bracket(variable,
                 hamiltonian(this->potential, state.masses), variable.grade());
@@ -242,7 +242,7 @@ public:
 
 };
 
-} // namespace md
+} // namespace cwa
 }
 
 

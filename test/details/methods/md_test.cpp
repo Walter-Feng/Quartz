@@ -13,17 +13,17 @@ TEST_CASE("MD Test") {
     const Polynomial<double> potential = Polynomial<double>(arma::vec{0.5},
                                                             lvec{2});
 
-    const md::State test_state = md::State(real_space.wigner_transform(),
-                                           arma::uvec{20, 20},
-                                           arma::mat{{-5., 5.},
+    const cwa::State test_state = cwa::State(real_space.wigner_transform(),
+                                             arma::uvec{20, 20},
+                                             arma::mat{{-5., 5.},
                                                      {-5., 5.}},
-                                           arma::vec{1.});
+                                             arma::vec{1.});
 
-    const auto test_operator = md::Operator(test_state, potential);
+    const auto test_operator = cwa::Operator(test_state, potential);
 
-    const Propagator<md::State> propagator =
-        runge_kutta_4<md::Operator<Polynomial<double>>,
-                      md::State,
+    const Propagator<cwa::State> propagator =
+        runge_kutta_4<cwa::Operator<Polynomial<double>>,
+                      cwa::State,
                       Polynomial<double>>
             (test_operator, potential);
 

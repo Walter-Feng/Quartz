@@ -4,7 +4,7 @@
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
-namespace md {
+namespace cwa {
 
 namespace details {
 
@@ -94,6 +94,29 @@ public:
                  this->masses);
   }
 
+  template<typename Function>
+  arma::vec expectation(const std::vector<Function> & function) const {
+    arma::vec result(function.size());
+
+#pragma omp parallel for
+    for(arma::uword i=0;i<result.n_elem;i++) {
+
+      if(function[i].dim() != this->dim() * 2) {
+        throw Error("The dimension of the function is invalid for the calculation of expectation");
+      }
+      result(i) = arma::dot(at(function[i], this->points), weights) / arma::sum(weights);
+    }
+
+    return result;
+  }
+
+  template<typename Function>
+  double expectation(const Function & function) const {
+    const arma::vec result = at(function, this->points);
+
+    return arma::dot(result, weights) / arma::sum(weights);
+  }
+
   inline
   arma::vec positional_expectation() const {
     arma::uword dim = this->dim();
@@ -111,7 +134,7 @@ public:
   State operator+(const State & B) const {
     if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
         !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
-      throw Error("Different md states are being added");
+      throw Error("Different cwa states are being added");
     }
 
     return State(this->points + B.points, this->weights, this->masses);
@@ -156,7 +179,7 @@ public:
 
 };
 
-} // namespace md
+} // namespace cwa
 }
 
 
