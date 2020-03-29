@@ -20,13 +20,13 @@ TEST_CASE("Moyal Bracket") {
     const auto moyal = moyal_bracket(x, kinetic, 3);
 
     CHECK(moyal.coefs(0) == 1);
-    CHECK(moyal.indices(1,0) == 1);
+    CHECK(moyal.exponents(1,0) == 1);
 
     const auto harmonic_potential = Polynomial<double>(arma::vec{0.5}, lvec{2});
     const auto h2 = hamiltonian(harmonic_potential);
 
     CHECK(moyal_bracket(p, h2, 3).coefs(0) == -1);
-    CHECK(moyal_bracket(p, h2, 3).indices(0,0) == 1);
+    CHECK(moyal_bracket(p, h2, 3).exponents(0,0) == 1);
   }
 }
 
