@@ -57,6 +57,7 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/methods/dmd.h"
 #include "quartz_internal/details/methods/cwa_smd.h"
 #include "quartz_internal/details/methods/dvr_smd.h"
+#include "quartz_internal/details/methods/gaussian_cwa_smd.h"
 // #include "quartz_internal/details/methods/method_template.h"
 
 #pragma GCC diagnostic pop
