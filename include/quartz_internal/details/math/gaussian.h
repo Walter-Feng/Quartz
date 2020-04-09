@@ -15,6 +15,12 @@ struct Gaussian {
   arma::Col<T> center;
 
   inline
+  Gaussian() :
+      coef(0.0),
+      covariance(arma::eye<arma::mat>(1,1)),
+      center(arma::Col<T>{1.0}) {}
+
+  inline
   Gaussian(const Gaussian<T> & gaussian) :
   coef(gaussian.coef),
   covariance(gaussian.covariance),
@@ -227,6 +233,11 @@ struct GaussianWithPoly {
   gaussian(function.gaussian) {}
 
   inline
+  GaussianWithPoly() :
+  polynomial(),
+  gaussian() {}
+
+  inline
   GaussianWithPoly(const arma::uword dim, const T coef = 0.0) :
       polynomial(Polynomial<T>(dim, coef)),
       gaussian(Gaussian<T>(dim, 1.0)) {}
@@ -280,13 +291,13 @@ struct GaussianWithPoly {
   }
 
 
-  explicit
+
   inline
   GaussianWithPoly(const arma::mat & covariance, const T coef = 1.0) :
       polynomial(Polynomial<T>(covariance.n_cols, coef)),
       gaussian(Gaussian<T>(covariance, 1.0)) {}
 
-  explicit
+
   inline
   GaussianWithPoly(const Gaussian<T> & gaussian) :
       polynomial(Polynomial<T>(gaussian.dim(), gaussian.coef)),
@@ -335,7 +346,7 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly<T> derivative(const arma::uvec & index) const {
-    if (index.n_elem != this->dim) {
+    if (index.n_elem != this->dim()) {
       throw Error("Derivative operator out of bound");
     }
 
@@ -424,12 +435,12 @@ struct GaussianWithPoly {
 //struct Gaussian {
 //  std::vector<gaussian::Term<T>> terms;
 //
-//  explicit
+//
 //  inline
 //  Gaussian(std::vector<gaussian::Term<T>> terms) :
 //      terms(terms) {}
 //
-//  explicit
+//
 //  inline
 //  Gaussian(const arma::uword dim, const T coef = 0.0) :
 //      terms({gaussian::Term<T>(dim, coef)}) {}
@@ -446,7 +457,7 @@ struct GaussianWithPoly {
 //           const T coef = 1.0) :
 //      terms({gaussian::Term<T>(covariance,center,coef)}) {}
 //
-//  explicit
+//
 //  inline
 //  Gaussian(const arma::mat & covariance, const T coef = 1.0) :
 //      terms({gaussian::Term<T>(covariance, coef)}) {}

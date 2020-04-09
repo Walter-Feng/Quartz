@@ -9,6 +9,7 @@
 #include "parse/methods/cwa_smd.h"
 #include "parse/methods/dvr.h"
 #include "parse/methods/dvr_smd.h"
+#include "parse/methods/g_dvr_smd.h"
 
 namespace quartz {
 
@@ -40,6 +41,10 @@ int run(const ptree::ptree & input) {
   } else if (method == "dvr_smd") {
 
     result.put_child("result", dvr_smd(input, potential, initial));
+
+  } else if (method == "g_cwa_smd") {
+
+    result.put_child("result", g_cwa_smd(input, potential, initial));
 
   } else {
     throw Error("The method specified is not implemented");

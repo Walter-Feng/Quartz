@@ -5,23 +5,6 @@ namespace method {
 namespace cwa_smd {
 namespace details {
 
-template<typename Potential>
-arma::mat force(const Potential & potential,
-                const arma::mat & positions) {
-  arma::mat result = arma::mat(arma::size(positions));
-
-#pragma omp parallel for
-  for (arma::uword i = 0; i < positions.n_cols; i++) {
-    const arma::vec position = positions.col(i);
-    for (arma::uword j = 0; j < positions.n_rows; j++) {
-      result(j, i) = -potential.derivative(j).at(position);
-    }
-  }
-
-  return result;
-}
-
-
 template<typename Function>
 auto expectation(const Function & function,
                  const arma::mat & points,
@@ -295,11 +278,13 @@ public:
   }
 
   template<typename T>
-  arma::vec expectation(const std::vector<math::Polynomial<T>> & polynomials) const {
+  arma::vec expectation(const std::vector<math::Polynomial < T>>
+
+  & polynomials) const {
     arma::vec result(polynomials.size());
-    
+
 #pragma omp parallel for
-    for(arma::uword i=0; i<result.n_elem; i++) {
+    for (arma::uword i = 0; i < result.n_elem; i++) {
       result(i) = this->expectation(polynomials[i]);
     }
 
@@ -356,8 +341,8 @@ public:
 
     const arma::mat points_change_list =
         arma::join_cols(p_submatrix,
-                        details::force(this->potential,
-                                       state.points.rows(0, state.dim() - 1)));
+                        cwa::details::force(this->potential,
+                                            state.points.rows(0, state.dim() - 1)));
 
     arma::vec expectation_change_list =
         arma::vec(arma::size(state.expectations));

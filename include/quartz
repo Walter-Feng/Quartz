@@ -39,6 +39,7 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/math/exponential.h"
 #include "quartz_internal/details/math/runge_kutta.h"
 #include "quartz_internal/details/math/moyal_bracket.h"
+#include "quartz_internal/details/math/taylor_expand.h"
 
 //utils
 #include "quartz_internal/util/check_member.h"

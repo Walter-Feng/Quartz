@@ -477,13 +477,13 @@ public:
     for(arma::uword i=1; i<this->exponents.n_cols; i++) {
 
       if(coefs(i) < 0) {
-        result += "+ ";
-      } else {
         result += "- ";
+      } else {
+        result += "+ ";
       }
 
       if(width <= 0) {
-        result += fmt::format("{:.{}}", this->coefs(i), precision);
+        result += fmt::format("{:.{}}", std::abs(this->coefs(i)), precision);
       } else {
         result += format(coefs(i), width, precision);
       }

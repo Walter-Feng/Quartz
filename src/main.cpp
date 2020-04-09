@@ -38,8 +38,9 @@ int main(const int argc, const char * argv[]) {
                                            "Currently supported methods: \n"
                                            "DVR(default), \n"
                                            "CWA, \n"
-                                           "CWA_SMD\n"
-                                           "DVR_SMD\n",
+                                           "CWA_SMD,\n"
+                                           "DVR_SMD,\n"
+                                           "G_CWA_SMD\n",
                                            {"method"});
 
   args::ValueFlag<arma::uword> grid_flag(parser, "grid",

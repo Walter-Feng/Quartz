@@ -172,6 +172,7 @@ add_executable(test_mathematics
         test/details/math/runge_kutta_test.cpp
         test/details/math/schrotinger_wrapper_test.cpp
         test/details/math/moyal_bracket_test.cpp
+        test/details/math/taylor_expand_test.cpp
         )
 
 target_link_libraries(test_mathematics catch2 quartz)
@@ -195,7 +196,8 @@ add_executable(test_methods
         test/details/methods/wd_test.cpp
         test/details/methods/dmd_test.cpp
         test/details/methods/cwa_smd_test.cpp
-        test/details/methods/dvr_smd_test.cpp)
+        test/details/methods/dvr_smd_test.cpp
+        test/details/methods/g_cwa_smd_test.cpp)
 
 target_link_libraries(test_methods catch2 quartz)
 
