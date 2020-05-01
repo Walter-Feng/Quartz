@@ -127,7 +127,7 @@ int main(const int argc, const char * argv[]) {
 
   int print_level = 2;
 
-  auto initial_wf = math::Gaussian<cx_double>(arma::mat{1.}, arma::cx_vec{1});
+  auto initial_wf = math::Gaussian<cx_double>(arma::cx_mat{1.}, arma::cx_vec{1});
 
   ///////////////////// Potential (model) //////////////////////
   auto potential = math::Polynomial<double>(arma::vec{0.5}, lmat{2});

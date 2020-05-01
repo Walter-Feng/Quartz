@@ -50,6 +50,14 @@ ptree::ptree dvr_smd(const ptree::ptree & input,
   return result;
 }
 
+template<typename Initial>
+ptree::ptree dvr_smd(const ptree::ptree & input,
+                     const MathObject<double> & potential,
+                     const Initial & initial) {
+
+  return dvr_smd(input, parse::polynomial(potential), initial);
+}
+
 }
 
 #endif

@@ -15,12 +15,15 @@ project(Quartz VERSION ${PROJECT_VERSION}
 
 include(GNUInstallDirs)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
+
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(quartz SHARED
-        src/wrapper.cpp
+        src/math_object.cpp
         )
 
 ####################
@@ -40,8 +43,10 @@ if (${ARMADILLO_FOUND})
     message("     ARMADILLO_VERSION: " ${ARMADILLO_VERSION_STRINcatchG})
     message("     ARMADILLO_LIBRARIES   : " ${ARMADILLO_LIBRARIES})
     message("     ARMADILLO_INCLUDE_DIRS: " ${ARMADILLO_INCLUDE_DIRS})
-endif ()
 
+    include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
+    target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
+endif ()
 ######OpenMP######
 
 FIND_PACKAGE(OpenMP)
@@ -51,12 +56,6 @@ if (OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif ()
-
-
-include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
-target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
 
 install(TARGETS quartz
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -69,6 +68,18 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
         DESTINATION include
         FILES_MATCHING PATTERN "quartz")
+
+######GSL######
+
+find_package(
+        GSL
+        2.4
+        REQUIRED
+)
+
+include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
+target_link_libraries(quartz ${GSL_LIBRARIES})
+
 
 
 ################################
@@ -123,8 +134,10 @@ if (HAVE_EXE)
                 src/file_system/json_parse.cpp
                 src/util/ptree.cpp
                 src/util/resolve.cpp
+                src/parse/math/exponential.cpp
                 src/parse/math/polynomial.cpp
                 src/parse/math/gaussian.cpp
+                src/parse/math/math_object.cpp
                 src/parse/methods/cwa.cpp
                 )
 
@@ -173,6 +186,7 @@ add_executable(test_mathematics
         test/details/math/schrotinger_wrapper_test.cpp
         test/details/math/moyal_bracket_test.cpp
         test/details/math/taylor_expand_test.cpp
+        test/details/math/math_object_test.cpp
         )
 
 target_link_libraries(test_mathematics catch2 quartz)
@@ -182,7 +196,8 @@ add_test(NAME UNITTEST_math
 
 add_executable(test_utils
         test/utils/check_member_test.cpp
-        test/utils/elementary_function_operator.cpp)
+        test/utils/elementary_function_operator.cpp
+        test/utils/gsl_converter_test.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
 
@@ -196,8 +211,11 @@ add_executable(test_methods
         test/details/methods/wd_test.cpp
         test/details/methods/dmd_test.cpp
         test/details/methods/cwa_smd_test.cpp
+        test/details/methods/cwa_smd_opt_test.cpp
         test/details/methods/dvr_smd_test.cpp
-        test/details/methods/g_cwa_smd_test.cpp)
+        test/details/methods/g_cwa_smd_test.cpp
+        test/details/methods/heller_cwa_test.cpp
+        test/details/methods/heller_gaussian_test.cpp)
 
 target_link_libraries(test_methods catch2 quartz)
 

@@ -1,6 +1,6 @@
 // name your method
-#ifndef METHODS_DVR_H
-#define METHODS_DVR_H
+#ifndef M_DVR_H
+#define M_DVR_H
 
 // include only the necessary header files
 #include "cwa.h"
@@ -15,63 +15,16 @@
 namespace method {
 // use your method name to create a subspace for your
 // implementation of details
-namespace dvr {
+namespace m_dvr {
+
 
 namespace details {
-
-inline
-cx_double kinetic_matrix_element(const long long i,
-                                 const long long j,
-                                 const double interval,
-                                 const double mass) {
-  if (i == j) {
-    return cx_double{
-        math::pi * math::pi / 6. / mass / interval / interval, 0.};
-  } else {
-    return cx_double{
-        std::pow(-1, i - j) / mass / interval / interval / (double) (i - j) /
-        (double) (i - j), 0.};
-  }
-}
-
-inline
-cx_double momentum_matrix_element(const long long i,
-                                  const long long j,
-                                  const double interval) {
-
-  if (i == j) {
-    return cx_double{0., 0.};
-  } else {
-    return -cx_double{0., std::pow(-1, i - j) / interval / (i - j)};
-  }
-}
-
 inline
 arma::cx_cube momentum_matrices(const arma::uvec & grid,
                                 const arma::mat & ranges,
-                                const arma::uword dim) {
-  const long long narrowed_dim = arma::prod(grid);
-
-  arma::cx_cube result = arma::cx_cube(narrowed_dim, narrowed_dim, dim);
-
-  const arma::vec intervals = (ranges.col(1) - ranges.col(0))
-                              / (grid - arma::ones(grid.n_elem));
-
-  const auto table = math::space::grids_to_table(grid);
-
-#pragma omp parallel for
-  for (arma::uword k = 0; k < dim; k++) {
-    for (long long i = 0; i < narrowed_dim; i++) {
-      for (long long j = 0; j < narrowed_dim; j++) {
-        result(i, j, k) = momentum_matrix_element(
-            math::space::index_to_indices(i, table)[k],
-            math::space::index_to_indices(j, table)[k],
-            intervals(k));
-      }
-    }
-  }
-
-  return result;
+                                const arma::uword dim,
+                                const arma::uword layers) {
+  arma::cx_double
 }
 
 inline
@@ -96,57 +49,73 @@ public:
   arma::vec masses;
   arma::cube positional_matrices;
   arma::cx_cube momentum_matrices;
+  arma::uword layers;
 
   // Establish an easy way to construct your State
   template<typename Wavefunction>
-  State(const Wavefunction & initial,
+  State(const std::vector<Wavefunction> & initial,
         const arma::uvec & grid,
         const arma::mat & range,
         const arma::vec & masses) :
       points(math::space::points_generate(grid, range)),
-      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
+      coefs(),
       grid(grid),
       ranges(range),
       masses(masses),
       positional_matrices(dvr::details::position_matrices(points)),
       momentum_matrices(
-          dvr::details::momentum_matrices(grid, range, range.n_rows)) {
+          dvr::details::momentum_matrices(grid, range, range.n_rows)),
+      layers(initial.size()) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
     if (grid.n_rows != masses.n_rows) {
       throw Error("Different dimension between the grid and the masses");
     }
+
+    for(auto i=0; i<initial.size(); i++) {
+      this->coefs = arma::join_cols(this->coefs,
+          arma::conv_to<arma::cx_vec>::from(at(initial[i], points)));
+    }
   }
 
   template<typename Wavefunction>
-  State(const Wavefunction & initial,
+  State(const std::vector<Wavefunction> & initial,
         const arma::uvec & grid,
         const arma::mat & range) :
       points(math::space::points_generate(grid, range)),
-      coefs(arma::conv_to<arma::cx_vec>::from(at(initial, points))),
+      coefs(),
       grid(grid),
       ranges(range),
       masses(arma::ones<arma::vec>(grid.n_elem)),
       positional_matrices(dvr::details::position_matrices(points)),
       momentum_matrices(
-          dvr::details::momentum_matrices(grid, range, range.n_rows)) {
+          dvr::details::momentum_matrices(grid, range, range.n_rows)),
+      layers(initial.size()) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
+    }
+
+    for(auto i=0; i<initial.size(); i++) {
+      this->coefs = arma::join_cols(this->coefs,
+                                    arma::conv_to<arma::cx_vec>::from(at(initial[i], points)));
     }
   }
 
   inline
   State(const arma::cx_vec & coefs,
         const arma::uvec & grid,
-        const arma::mat & range) :
+        const arma::mat & range,
+        const arma::vec & masses,
+        const arma::uword layers) :
       coefs(coefs),
       grid(grid),
       ranges(range),
-      masses(arma::ones<arma::vec>(grid.n_elem)),
+      masses(masses),
       positional_matrices(dvr::details::position_matrices(points)),
       momentum_matrices(
-          dvr::details::momentum_matrices(grid, range, range.n_rows)) {
+          dvr::details::momentum_matrices(grid, range, range.n_rows)),
+      layers(layers) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -170,7 +139,7 @@ public:
       for (long long j = 0; j < narrowed_dim; j++) {
         for (arma::uword k = 0; k < this->grid.n_elem; k++) {
 
-          result(i, j) += details::kinetic_matrix_element(
+          result(i, j) += dvr::details::kinetic_matrix_element(
               math::space::index_to_indices(i, table)[k],
               math::space::index_to_indices(j, table)[k],
               intervals(k),
@@ -183,10 +152,31 @@ public:
   }
 
   template<typename Potential>
-  arma::cx_mat hamiltonian_matrix(const Potential & potential) const {
-    const arma::vec potential_diag = at(potential, this->points);
+  arma::cx_mat hamiltonian_matrix(const arma::field<Potential> & potential) const {
 
-    return this->kinetic_energy_matrix() + arma::diagmat(potential_diag);
+    if(potential.n_cols != this->layers || potential.n_rows != this->layers) {
+      throw Error("m_dvr: the layers of potential does not match the system");
+    }
+
+    arma::cx_mat result;
+
+    for(arma::uword i=0; i<potential.n_rows; i++) {
+      arma::cx_mat row_result;
+      for(arma::uword j=0; j<potential.n_cols; j++) {
+
+        const arma::cx_mat potential_diag = arma::diagmat(at(potential(i,j), this->points));
+
+        if(i==j) {
+          row_result = arma::join_rows(row_result,
+                                       potential_diag + this->kinetic_energy_matrix());
+        } else {
+          row_result = arma::join_rows(row_result, potential_diag);
+        }
+      }
+
+      result = arma::join_cols(result, row_result);
+    }
+    return result;
   }
 
 
@@ -221,7 +211,7 @@ public:
   }
 
   inline
-  cwa::State wigner_transform(
+  std::vector<cwa::State> wigner_transform(
       const arma::uvec & momentum_space_grid,
       const arma::mat & momentum_space_ranges) const {
 
@@ -244,58 +234,72 @@ public:
     const arma::vec scaling =
         (phase_space_range.col(1) - phase_space_range.col(0)) / (phase_space_grid - 1);
 
-    arma::vec weights(phase_space_points.n_cols, arma::fill::zeros);
+    std::vector<cwa::State> all_states;
+    const arma::cx_mat split_up_coefs =
+        arma::reshape(this->coefs, this->coefs.n_elem / this->layers, this->layers);
 
-#pragma omp parallel for
-    for (arma::uword i = 0; i < weights.n_elem; i++) {
+    for(arma::uword i_layer=0; i_layer <this->layers; i_layer++) {
 
-      const arma::uvec X = phase_space_iterations.col(i).rows(0, this->dim()-1);
+      arma::vec weights(phase_space_points.n_cols, arma::fill::zeros);
 
-      const arma::vec P = phase_space_points.col(i).rows(this->dim(), 2*this->dim()-1);
+      const arma::cx_vec layer_coefs = split_up_coefs.col(i_layer);
+      #pragma omp parallel for
+      for (arma::uword i = 0; i < weights.n_elem; i++) {
 
-      for (arma::uword j = 0; j < Y_iterations.n_cols; j++) {
-        const arma::uvec Y = Y_iterations.col(j);
-        const arma::vec Y_num = Y % scaling.rows(0, this->dim() - 1);
+        const arma::uvec X = phase_space_iterations.col(i).rows(0, this->dim()-1);
 
-        const arma::uvec X_less_than_Y = arma::find(X<Y);
-        const arma::uvec X_plus_Y_greater_than_grid = arma::find(X + Y > this->grid - 1);
+        const arma::vec P = phase_space_points.col(i).rows(this->dim(), 2*this->dim()-1);
 
-        if(X_less_than_Y.n_elem == 0 && X_plus_Y_greater_than_grid.n_elem == 0) {
-          const arma::uvec X_minus_Y = X-Y;
-          const arma::uvec X_plus_Y = X+Y;
-          const arma::uword X_minus_Y_index =
-              math::space::indices_to_index(X_minus_Y,real_space_table);
-          const arma::uword X_plus_Y_index =
-              math::space::indices_to_index(X_plus_Y,real_space_table);
+        for (arma::uword j = 0; j < Y_iterations.n_cols; j++) {
+          const arma::uvec Y = Y_iterations.col(j);
+          const arma::vec Y_num = Y % scaling.rows(0, this->dim() - 1);
 
-          const arma::uvec non_zero_Y = arma::find(Y);
-          if(non_zero_Y.n_elem == 0) {
-            const double term = std::real(
-                std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
-                std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
+          const arma::uvec X_less_than_Y = arma::find(X<Y);
+          const arma::uvec X_plus_Y_greater_than_grid = arma::find(X + Y > this->grid - 1);
 
-            weights(i) += term / std::pow(2.0 * math::pi, this->dim());
-          }
-          else {
-            const double term = 2.0 * std::real(
-                std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
-                std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
+          if(X_less_than_Y.n_elem == 0 && X_plus_Y_greater_than_grid.n_elem == 0) {
+            const arma::uvec X_minus_Y = X-Y;
+            const arma::uvec X_plus_Y = X+Y;
+            const arma::uword X_minus_Y_index =
+                math::space::indices_to_index(X_minus_Y,real_space_table);
+            const arma::uword X_plus_Y_index =
+                math::space::indices_to_index(X_plus_Y,real_space_table);
 
-            weights(i) += term / std::pow(2.0 * math::pi, this->dim());
+            const arma::uvec non_zero_Y = arma::find(Y);
+            if(non_zero_Y.n_elem == 0) {
+              const double term = std::real(
+                  std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
+                  std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
+
+              weights(i) += term / std::pow(2.0 * math::pi, this->dim());
+            }
+            else {
+              const double term = 2.0 * std::real(
+                  std::exp(- 2.0 * cx_double{0.0,1.0} * arma::dot(P,Y_num)) *
+                  std::conj(this->coefs(X_minus_Y_index)) * this->coefs(X_plus_Y_index));
+
+              weights(i) += term / std::pow(2.0 * math::pi, this->dim());
+            }
           }
         }
       }
+
+      all_states.push_back(cwa::State(phase_space_points, weights, this->masses));
     }
 
-    return cwa::State(phase_space_points, weights, this->masses);
+    return all_states;
 
   }
 
   template<typename Function>
-  arma::vec expectation(const std::vector<Function> & observables) const {
-    const cwa::State transformed = this->wigner_transform();
+  std::vector<arma::vec> expectation(const std::vector<Function> & observables) const {
+    const std::vector<cwa::State> transformed = this->wigner_transform();
 
-    arma::vec result = transformed.expectation(observables);
+    std::vector<arma::vec> result(this->layers);
+
+    for(auto i=0; i<this->layers; i++) {
+      result.push_back(trasnformed[i].expectation);
+    }
 
     return result;
   }
@@ -310,7 +314,7 @@ public:
   }
 
   inline
-  cwa::State wigner_transform() const {
+  std::vector<cwa::State> wigner_transform() const {
     return this->wigner_transform(this->grid, this->ranges);
   }
 
@@ -384,4 +388,4 @@ public:
 } // namespace dvr
 }
 
-#endif //METHODS_DVR_H
+#endif //M_DVR_H

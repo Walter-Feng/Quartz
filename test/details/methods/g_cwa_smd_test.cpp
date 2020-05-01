@@ -25,8 +25,6 @@ TEST_CASE(
           method::g_cwa_smd::State,
           math::Polynomial<double>>;
 
-  propagate(initial_state, op, wrapper, harmonic_potential, generic_printer<method::g_cwa_smd::State>, 10000,0.01,2);
-
 }
 
 }

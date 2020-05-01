@@ -6,6 +6,7 @@
 #include "quartz_internal/error.h"
 #include "quartz_internal/util/member_function_wrapper.h"
 #include "quartz_internal/util/type_converter.h"
+#include "quartz_internal/details/math/space.h"
 
 namespace math {
 namespace polynomial {
@@ -27,7 +28,7 @@ struct Term {
     auto result = std::common_type_t<T, U>(1.0);
 
     for (arma::uword i = 0; i < position.n_elem; i++) {
-      if(this->exponents(i) == 0)
+      if (this->exponents(i) == 0)
         continue;
 
       result *= std::pow(position(i), this->exponents(i));
@@ -43,7 +44,7 @@ struct Term {
 
   explicit
   inline
-  Term(const arma::uword dim, const T coef = T(0.0)) :
+  Term(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
       exponents(arma::zeros<lvec>(dim)) {}
 
@@ -81,7 +82,7 @@ struct Term {
     } else {
       lvec new_indices = this->exponents;
       new_indices(index) -= 1;
-      return {this->coef * (new_indices(index) + 1), new_indices};
+      return {this->coef * (double) (new_indices(index) + 1), new_indices};
     }
   }
 
@@ -104,10 +105,11 @@ struct Term {
 
   template<typename U>
   auto differentiate(const U & function) const {
-    if(arma::min(this->exponents) < 0) {
+    if (arma::min(this->exponents) < 0) {
       throw Error("Quartz does not support integration operator");
     }
-    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(this->exponents)) * this->coef;
+    return quartz::derivative(function, arma::conv_to<arma::uvec>::from(
+        this->exponents)) * this->coef;
   }
 
   inline
@@ -179,8 +181,34 @@ public:
   inline
   long long grade() const {
     return arma::max(arma::sum(this->exponents));
+
   }
 
+  inline
+  Polynomial<double> real() const {
+    return Polynomial<double>(arma::real(this->coefs), this->exponents).clean();
+  }
+
+  inline
+  Polynomial<double> imag() const {
+    return Polynomial<double>(arma::imag(this->coefs), this->exponents).clean();
+  }
+
+  inline
+  Polynomial<double> abs() const {
+    return Polynomial<double>(arma::abs(this->coefs), this->exponents).clean();
+  }
+
+  inline
+  Polynomial<T> conj() const {
+    if constexpr(std::is_same<T,double>::value) {
+      return *this;
+    } else {
+      const arma::cx_vec new_coefs = arma::conj(this->coefs);
+
+      return Polynomial<T>(new_coefs, this->exponents);
+    }
+  }
   template<typename U>
   std::common_type_t<T, U> at(const arma::Col<U> & position) const {
 
@@ -266,30 +294,37 @@ public:
             -> Polynomial<std::common_type_t<T, U>> {
 
           const arma::uword dim = term.dim();
-          const auto & indices = term.exponents;
+          const auto & exponent = term.exponents;
+          const arma::uvec grid = arma::conv_to<arma::uvec>::from(exponent + 1);
+          const auto iterations = space::auto_iteration_over_dims(grid);
 
           auto result = Polynomial<std::common_type_t<T, U>>(dim);
 
 #pragma omp parallel for
-          for (arma::uword i = 0; i < dim; i++) {
-            auto term = Polynomial<std::common_type_t<T, U>>(dim);
-            for (arma::uword j = 0; j <= indices(i); j++) {
-              lvec variable = arma::zeros<lvec>(dim);
-              variable(i) = j;
-              term +=
-                  polynomial::Term<double>{binomial(indices(i), j) *
-                                           std::pow(displacement(i),
-                                                    indices(i) - j), variable};
+          for (arma::uword i = 0; i < iterations.n_cols; i++) {
+            const lvec displacements_poly = arma::conv_to<lvec>::from(
+                iterations.col(i));
+            const lvec new_exponents = exponent - displacements_poly;
+
+            const math::polynomial::Term<double> local_term(1.0,
+                                                            displacements_poly);
+
+            double binomial_coef = 1;
+            for (arma::uword j = 0; j < dim; j++) {
+              binomial_coef *= binomial(exponent(j), displacements_poly(j));
             }
-            result *= term;
+
+            result = result + math::polynomial::Term<double>(
+                term.coef * binomial_coef * local_term.at(displacement),
+                new_exponents);
           }
 
           return result;
         };
 
 #pragma omp parallel for
-    for (arma::uword i = 0; i < this->coefs; i++) {
-      result += term_displace(this->term(i), displacement);
+    for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
+      result = result + term_displace(this->term(i), displacement);
     }
 
     return result;
@@ -319,7 +354,7 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>>
-  operate(const std::vector<Polynomial<U>> & polynomial_list) {
+  operator()(const std::vector<Polynomial<U>> & polynomial_list) const {
 
     const auto dim = this->dim();
 
@@ -335,16 +370,16 @@ public:
           polynomial_list[0].dim(), 1.0);
 #pragma omp parallel for
       for (arma::uword i = 0; i < dim; i++) {
-        result *= polynomial_list[i].pow(term.exponents(i));
+        result = result * polynomial_list[i].pow(term.exponents(i));
       }
 
-      return term->coef * result;
+      return result * term.coef;
     };
 
     auto result = Polynomial<std::common_type_t<T, U>>(polynomial_list[0].dim(),
                                                        0.0);
     for (arma::uword i = 0; i < this->coefs.n_elem; i++) {
-      result += term_operate(this->term(i), polynomial_list);
+      result = result + term_operate(this->term(i), polynomial_list);
     }
 
     return result;
@@ -362,7 +397,7 @@ public:
         new_coefs =
         arma::join_cols(converted_this_coefs, converted_B_coefs);
 
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -372,12 +407,12 @@ public:
         this->exponents.n_rows);
     const lmat new_indices = arma::join_rows(this->exponents,
                                              dummy_indices);
-    const arma::Col<std::common_type_t<T,U>> converted_coefs =
-        arma::conv_to<arma::Col<std::common_type_t<T,U>>>::from(this->coefs);
+    const arma::Col<std::common_type_t<T, U>> converted_coefs =
+        arma::conv_to<arma::Col<std::common_type_t<T, U>>>::from(this->coefs);
     const arma::Col<std::common_type_t<T, U>> new_coefs = arma::join_cols(
-        converted_coefs, arma::Col<std::common_type_t<T,U>>{B});
+        converted_coefs, arma::Col<std::common_type_t<T, U>>{B});
 
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -390,7 +425,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = arma::join_cols(converted_this_coefs, converted_B_coef);
 
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -401,7 +436,7 @@ public:
     const arma::Col<std::common_type_t<T, U>>
         new_coefs = this->coefs * B.coef;
 
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{new_coefs, new_indices}.clean();
   }
 
   template<typename U>
@@ -418,7 +453,8 @@ public:
 
   template<typename U>
   Polynomial<std::common_type_t<T, U>> operator*(const U B) const {
-    return Polynomial<std::common_type_t<T, U>>{this->coefs * B, this->exponents}.clean();
+    return Polynomial<std::common_type_t<T, U>>{this->coefs * B,
+                                                this->exponents}.clean();
   }
 
   template<typename U>
@@ -444,56 +480,124 @@ public:
     new_indices.each_col() -= B.exponents;
     const arma::Col<std::common_type_t<T, U>> new_coefs = this->coefs / B.coef;
 
-    return Polynomial<std::common_type_t<T,U>>{new_coefs, new_indices}.clean();
+    return Polynomial<std::common_type_t<T, U>>{new_coefs, new_indices}.clean();
+  }
+
+  Polynomial<T> sort() const {
+    const lvec maximum_exponents = arma::max(this->exponents, 1);
+    const lvec minimum_exponents = arma::min(this->exponents, 1);
+
+    const arma::uvec grid =
+        arma::conv_to<arma::uvec>::from(maximum_exponents - minimum_exponents)
+        + 1;
+
+    const auto table = math::space::grids_to_table(grid);
+
+    lmat indices = this->exponents;
+    indices.each_col() -= minimum_exponents;
+    const arma::umat converted_indices = arma::conv_to<arma::umat>::from(
+        indices);
+
+    arma::uvec key(converted_indices.n_cols);
+
+
+#pragma omp parallel for
+    for (arma::uword i = 0; i < converted_indices.n_cols; i++) {
+      const arma::uvec index = converted_indices.col(i);
+
+      key(i) = math::space::indices_to_index(index, table);
+    }
+
+    const arma::uvec unique_elements = arma::unique(key);
+
+    arma::Col<T> result_coefs(unique_elements.n_elem);
+    lmat result_exponents(this->dim(), unique_elements.n_elem);
+
+    for (arma::uword i = 0; i < unique_elements.n_elem; i++) {
+      const arma::uvec
+          identical_terms_indices = arma::find(key == unique_elements(i));
+
+      const lvec corresponding_exponent =
+          this->exponents.col(identical_terms_indices(0));
+
+      const arma::Col<T> corresponding_coef =
+          this->coefs.rows(identical_terms_indices);
+
+      result_coefs(i) = arma::sum(corresponding_coef);
+
+      result_exponents.col(i) = corresponding_exponent;
+    }
+
+    return Polynomial<T>(result_coefs, result_exponents);
+
   }
 
   Polynomial<T> clean() const {
-    const arma::uvec non_zero = arma::find(this->coefs);
 
-    if(non_zero.n_elem == 0) {
-      return Polynomial<T>(this->dim());
+    const auto sorted_polynomial = this->sort();
+    const arma::uvec non_zero = arma::find(sorted_polynomial.coefs);
+
+    if (non_zero.n_elem == 0) {
+      return Polynomial<T>(sorted_polynomial.dim());
     }
-    return Polynomial<T>(this->coefs.rows(non_zero), this->exponents.cols(non_zero));
+    return Polynomial<T>(sorted_polynomial.coefs.rows(non_zero),
+                         sorted_polynomial.exponents.cols(non_zero));
   }
 
   std::string to_string(const int precision = 3,
                         const int width = -1) const {
 
-    const std::vector<std::string> variables =
-        util::variable_names(this->dim());
+    const auto printer = [](const Polynomial<double> term,
+                            const int precision,
+                            const int width) {
 
-    std::string result = " ";
+      const std::vector<std::string> variables =
+          util::variable_names(term.dim());
 
-    if(width <= 0) {
-      result += fmt::format("{:.{}}", this->coefs(0), precision);
-    } else {
-      result += format(coefs(0), width, precision);
-    }
-    for(arma::uword j=0; j<this->exponents.n_rows; j++) {
-      result =
-          result + variables[j] + "^" + std::to_string(this->exponents(j, 0)) + " ";
-    }
+      std::string result = " ";
 
-    for(arma::uword i=1; i<this->exponents.n_cols; i++) {
-
-      if(coefs(i) < 0) {
-        result += "- ";
+      if (width <= 0) {
+        result += fmt::format("{:.{}}", term.coefs(0), precision);
       } else {
-        result += "+ ";
+        result += format(term.coefs(0), precision, width);
       }
-
-      if(width <= 0) {
-        result += fmt::format("{:.{}}", std::abs(this->coefs(i)), precision);
-      } else {
-        result += format(coefs(i), width, precision);
-      }
-      for(arma::uword j=0; j<this->exponents.n_rows; j++) {
+      for (arma::uword j = 0; j < term.exponents.n_rows; j++) {
         result =
-            result + variables[j] + "^" + std::to_string(this->exponents(j, i)) + " ";
+            result + variables[j] + "^" + std::to_string(term.exponents(j, 0)) +
+            " ";
       }
 
+      for (arma::uword i = 1; i < term.exponents.n_cols; i++) {
+
+        if (term.coefs(i) < 0) {
+          result += "- ";
+        } else {
+          result += "+ ";
+        }
+
+        if (width <= 0) {
+          result += fmt::format("{:.{}}", std::abs(term.coefs(i)), precision);
+        } else {
+          result += format(term.coefs(i), precision, width);
+        }
+        for (arma::uword j = 0; j < term.exponents.n_rows; j++) {
+          result =
+              result + variables[j] + "^" +
+              std::to_string(term.exponents(j, i)) + " ";
+        }
+
+      }
+      return result;
+
+    };
+
+    if constexpr(std::is_same<T, cx_double>::value) {
+      return " (" + printer(this->real(), precision, width)
+             + "," + printer(this->imag(), precision, width) + ") ";
+    } else {
+      return printer(*this, precision, width);
     }
-    return result;
+
   }
 
 };

@@ -24,7 +24,7 @@ TEST_CASE("Polynomial Value") {
           std::abs(std::real(
               squared.at(
                   arma::cx_vec{cx_grid(i)})) -
-          0.5 * std::pow(grid(i), 2)) < 1e-14);
+                   0.5 * std::pow(grid(i), 2)) < 1e-14);
     }
 
     const Polynomial<double> cubed = Polynomial<double>(arma::vec{0.5},
@@ -141,8 +141,9 @@ TEST_CASE("Operators") {
     const auto squared_by_cubed =
         Polynomial<cx_double>(arma::cx_vec{0.15}, lmat{{{5}}});
 
-    for(arma::uword i=0; i<grid.n_elem; i++) {
-      CHECK(product.at(arma::vec{grid(i)}) == squared_by_cubed.at(arma::vec{grid(i)}));
+    for (arma::uword i = 0; i < grid.n_elem; i++) {
+      CHECK(product.at(arma::vec{grid(i)}) ==
+            squared_by_cubed.at(arma::vec{grid(i)}));
     }
   }
 
@@ -176,12 +177,12 @@ TEST_CASE("Operators") {
 
     for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::abs(product.at(arma::vec{grid(i)}) -
-            result.at(arma::vec{grid(i)})) < 1e-14);
+                     result.at(arma::vec{grid(i)})) < 1e-14);
     }
 
     for (arma::uword i = 0; i < grid.n_elem; i++) {
       CHECK(std::abs(product.at(arma::cx_vec{cx_grid(i)}) -
-            result.at(arma::cx_vec{cx_grid(i)})) < 1e-14);
+                     result.at(arma::cx_vec{cx_grid(i)})) < 1e-14);
     }
   }
 }
@@ -192,6 +193,21 @@ TEST_CASE("Member Functions") {
                                                           lmat{{{2}}});
 
     CHECK(squared.grade() == 2);
+  }
+
+
+  SECTION("Sort") {
+    const Polynomial<double> diff_terms = Polynomial<double>(arma::vec{0.5, 3},
+                                                             lmat{{{2, 2}, {3, 2}}});
+
+    CHECK(diff_terms.sort().coefs.n_elem == 2);
+
+    const Polynomial<double> three_diff_terms = Polynomial<double>(
+        arma::vec{0.5, 3, 6},
+        lmat{{{0, 0, 1}, {0, 0, 0}}});
+
+    CHECK(three_diff_terms.sort().coefs.n_elem == 2);
+
   }
 }
 

@@ -3,6 +3,7 @@
 
 // Third party library
 
+#include <any>
 #include <armadillo>
 #include <iomanip>
 #include <variant>
@@ -12,7 +13,6 @@
 #include <fmt/format.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
-
 
 namespace quartz {
 
@@ -40,6 +40,7 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/math/runge_kutta.h"
 #include "quartz_internal/details/math/moyal_bracket.h"
 #include "quartz_internal/details/math/taylor_expand.h"
+#include "quartz_internal/details/math/math_object.h"
 
 //utils
 #include "quartz_internal/util/check_member.h"
@@ -47,18 +48,23 @@ const std::string version = "0.0.1";
 #include "quartz_internal/util/member_function_wrapper.h"
 #include "quartz_internal/util/elementary_function_operator.h"
 #include "quartz_internal/util/auto_generator.h"
+#include "quartz_internal/util/gsl_converter.h"
 
 // Methods
 #include "quartz_internal/details/methods/enum.h"
 #include "quartz_internal/details/methods/dvr.h"
+#include "quartz_internal/details/methods/m_dvr.h"
 #include "quartz_internal/details/methods/cwa.h"
 #include "quartz_internal/details/methods/packet.h"
 #include "quartz_internal/details/methods/fixed_gaussian_basis.h"
 #include "quartz_internal/details/methods/wd.h"
 #include "quartz_internal/details/methods/dmd.h"
 #include "quartz_internal/details/methods/cwa_smd.h"
+#include "quartz_internal/details/methods/cwa_smd_opt.h"
 #include "quartz_internal/details/methods/dvr_smd.h"
 #include "quartz_internal/details/methods/gaussian_cwa_smd.h"
+#include "quartz_internal/details/methods/heller_cwa.h"
+#include "quartz_internal/details/methods/heller_gaussian.h"
 // #include "quartz_internal/details/methods/method_template.h"
 
 #pragma GCC diagnostic pop

@@ -51,6 +51,14 @@ ptree::ptree g_cwa_smd(const ptree::ptree & input,
   return result;
 }
 
+template<typename Initial>
+ptree::ptree g_cwa_smd(const ptree::ptree & input,
+                     const MathObject<double> & potential,
+                     const Initial & initial) {
+
+  return g_cwa_smd(input, parse::polynomial(potential), initial);
+}
+
 }
 
 #endif

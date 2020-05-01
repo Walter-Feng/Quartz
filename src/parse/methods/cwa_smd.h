@@ -6,6 +6,7 @@
 
 #include "src/util/ptree.h"
 #include "src/parse/printer.h"
+#include "src/parse/math/polynomial.h"
 
 namespace quartz {
 
@@ -48,6 +49,14 @@ ptree::ptree cwa_smd(const ptree::ptree & input,
             dt, printer_pair.second);
 
   return result;
+}
+
+template<typename Initial>
+ptree::ptree cwa_smd(const ptree::ptree & input,
+                     const MathObject<double> & potential,
+                     const Initial & initial) {
+
+  return cwa_smd(input, parse::polynomial(potential), initial);
 }
 
 }

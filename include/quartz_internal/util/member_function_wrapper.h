@@ -3,6 +3,23 @@
 
 #include "check_member.h"
 
+template<typename T>
+std::common_type_t<T, double> at(const double function,
+                                 const arma::Col<T> & position) {
+  return std::common_type_t<T, double>{function};
+}
+
+template<typename T>
+cx_double at(const cx_double function,
+             const arma::Col<T> & position) {
+  return function;
+}
+
+template<typename Function, typename T>
+auto at(const Function & function, const arma::Col<T> & position) {
+  return function.at(position);
+}
+
 template<typename Function, typename T>
 auto at(const Function & function, const arma::Mat<T> & positions) {
 
@@ -23,6 +40,16 @@ auto at(const Function & function, const arma::Mat<T> & positions) {
   }
 
   return result;
+}
+
+inline
+double derivative(const double function, const arma::uword index) {
+  return 0.0;
+}
+
+inline
+cx_double derivative(const cx_double function, const arma::uword index) {
+  return cx_double{0.0};
 }
 
 template<typename Function>

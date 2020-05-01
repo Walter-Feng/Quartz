@@ -78,7 +78,6 @@ auto taylor_expand(const Function & function,
     const arma::umat indices_at_true_i =
         details::indices_with_same_sum(function.dim(), true_i);
 
-#pragma omp parallel for
     for (arma::uword j = 0; j < indices_at_true_i.n_cols; j++) {
       const arma::uvec derivative_operator =
           indices_at_true_i.col(j);

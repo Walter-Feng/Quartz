@@ -23,5 +23,6 @@ math::Polynomial<double> polynomial(const ptree::ptree & input) {
 
 }
 
+
 }
 }

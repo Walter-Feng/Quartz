@@ -5,6 +5,7 @@
 #include "util/json_parser.h"
 #include "parse/math/gaussian.h"
 #include "parse/math/polynomial.h"
+#include "parse/math/math_object.h"
 #include "parse/methods/cwa.h"
 #include "parse/methods/cwa_smd.h"
 #include "parse/methods/dvr.h"
@@ -19,7 +20,7 @@ int run(const ptree::ptree & input) {
 
   const auto initial = parse::gaussian(input.get_child("initial"));
 
-  const auto potential = parse::polynomial(input.get_child("potential"));
+  const auto potential = parse::math_object(input.get_child("potential"));
 
   ptree::ptree result;
   util::put<std::string>(result, "Library", "Quartz");
