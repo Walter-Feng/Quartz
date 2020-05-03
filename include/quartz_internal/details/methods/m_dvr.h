@@ -19,13 +19,13 @@ namespace m_dvr {
 
 
 namespace details {
-inline
-arma::cx_cube momentum_matrices(const arma::uvec & grid,
-                                const arma::mat & ranges,
-                                const arma::uword dim,
-                                const arma::uword layers) {
-  arma::cx_double
-}
+//inline
+//arma::cx_cube momentum_matrices(const arma::uvec & grid,
+//                                const arma::mat & ranges,
+//                                const arma::uword dim,
+//                                const arma::uword layers) {
+//  arma::cx_double
+//}
 
 inline
 arma::cube position_matrices(const arma::mat & points) {
@@ -298,7 +298,7 @@ public:
     std::vector<arma::vec> result(this->layers);
 
     for(auto i=0; i<this->layers; i++) {
-      result.push_back(trasnformed[i].expectation);
+      result[i] = transformed[i].expectation(observables);
     }
 
     return result;
@@ -306,9 +306,13 @@ public:
 
   template<typename Function>
   double expectation(const Function & observable) const {
-    const cwa::State transformed = this->wigner_transform();
+    const std::vector<cwa::State> transformed = this->wigner_transform();
 
-    const double result = transformed.expectation(observable);
+    std::vector<arma::vec> result(this->layers);
+
+    for(auto i=0; i<this->layers; i++) {
+      result[i] = transformed[i].expectation(observable);
+    }
 
     return result;
   }

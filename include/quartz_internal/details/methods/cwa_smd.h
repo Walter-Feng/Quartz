@@ -290,6 +290,8 @@ public:
 
     return result;
   }
+
+  State & operator=(const State &) = default;
 };
 
 struct Operator {
@@ -371,6 +373,7 @@ public:
                  state.grade);
   }
 
+  Operator & operator=(const Operator &) = default;
 };
 
 } // namespace cwa

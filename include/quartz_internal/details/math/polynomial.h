@@ -121,6 +121,8 @@ struct Term {
   bool operator==(const Term<T> & term) const {
     return this->coef == term.coef && this->is_same_term(term);
   }
+
+  Term& operator=(const Term &) = default;
 };
 
 } // namespace polynomial
@@ -600,6 +602,7 @@ public:
 
   }
 
+  Polynomial<T>& operator=(const Polynomial<T> &) = default;
 };
 
 template<typename T>

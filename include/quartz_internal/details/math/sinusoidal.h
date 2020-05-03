@@ -26,6 +26,8 @@ struct Term {
           "Different size between the frequencies and the is_sin flags");
     }
   }
+
+  Term operator=(const Term &) = default;
 };
 }
 
@@ -189,6 +191,8 @@ struct Sinusoidal {
 
     return {new_coefs, new_freqs, new_is_sin, new_translation};
   }
+
+  Sinusoidal & operator=(const Sinusoidal &) = default;
 };
 }
 

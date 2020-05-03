@@ -252,6 +252,8 @@ struct Gaussian {
                                            new_coef);
   }
 
+  Gaussian & operator=(const Gaussian &) = default;
+
 };
 
 template<typename T>
@@ -459,6 +461,8 @@ struct GaussianWithPoly {
     return GaussianWithPoly<std::common_type_t<T, U>>
         (this->polynomial * B, this->gaussian);
   }
+
+  GaussianWithPoly & operator=(const GaussianWithPoly &) = default;
 };
 
 

@@ -143,6 +143,8 @@ public:
   State operator*(const double B) const {
     return State(this->points * B, this->weights, this->masses);
   }
+
+  State & operator=(const State &) = default;
 };
 
 template<typename Potential>
@@ -176,6 +178,8 @@ public:
 
     return State(change_list, state.weights, state.masses);
   }
+
+  Operator operator=(const Operator &) = default;
 
 };
 
