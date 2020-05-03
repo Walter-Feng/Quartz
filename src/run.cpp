@@ -14,7 +14,7 @@
 
 namespace quartz {
 
-int run(const ptree::ptree & input) {
+ptree::ptree run(const ptree::ptree & input) {
 
   const std::string method = input.get("method", "dvr");
 
@@ -51,11 +51,7 @@ int run(const ptree::ptree & input) {
     throw Error("The method specified is not implemented");
   }
 
-  if (input.get_optional<std::string>("json")) {
-    ptree::write_json(input.get<std::string>("json"), result);
-  }
-
-  return 0;
+  return result;
 }
 
 }

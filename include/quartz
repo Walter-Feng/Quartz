@@ -40,7 +40,7 @@ const std::string version = "0.0.1";
 #include "quartz_internal/details/math/runge_kutta.h"
 #include "quartz_internal/details/math/moyal_bracket.h"
 #include "quartz_internal/details/math/taylor_expand.h"
-#include "quartz_internal/details/math/math_object.h"
+#include "quartz_internal/details/math/wrapper.h"
 
 //utils
 #include "quartz_internal/util/check_member.h"

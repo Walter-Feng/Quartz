@@ -25,6 +25,11 @@ ElementaryFunction<double> elementary_function(const ptree::ptree & input) {
 }
 
 MathObject<double> math_object(const ptree::ptree & input) {
+
+  if(input.get_optional<double>("value")){
+    return MathObject<double>({input.get<double>("value")});
+  }
+
   if(input.get_child_optional("exponential")) {
 
     return MathObject<double>({exponential(input.get_child("exponential"))});

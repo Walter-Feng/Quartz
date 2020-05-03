@@ -5,13 +5,14 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "run.h"
-#include "parse/math/polynomial.h"
-#include "parse/math/gaussian.h"
-#include "parse/methods/cwa.h"
+#include "util/time.h"
 
 int main(const int argc, const char * argv[]) {
 
   using namespace quartz;
+
+  Timer time;
+
   namespace ptree = boost::property_tree;
 
   args::ArgumentParser parser("This is a simple quartz interface "
@@ -109,8 +110,18 @@ int main(const int argc, const char * argv[]) {
 
     ptree::read_json(args::get(input_flag), input);
 
-    return run(input);
+    ptree::ptree result = run(input);
 
+    if (input.get_optional<std::string>("json")) {
+      result.put<double>("time_elapsed", time.elapsed());
+      ptree::write_json(input.get<std::string>("json"), result);
+    }
+
+    fmt::print("Total time elapsed: ");
+    fmt::print("{}", time.elapsed());
+    fmt:: print(" s\n");
+
+    return 0;
   }
 
     ///////////////////// Global Parameters /////////////////////
@@ -239,6 +250,10 @@ int main(const int argc, const char * argv[]) {
                                   generic_printer<method::dvr::State>,
                                   steps, dt, print_level);
   }
+
+  fmt::print("Total time elapsed: ");
+  fmt::print("{}", time.elapsed());
+  fmt:: print(" s\n");
 
   return 0;
 }

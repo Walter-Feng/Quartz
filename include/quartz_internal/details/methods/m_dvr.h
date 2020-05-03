@@ -19,20 +19,57 @@ namespace m_dvr {
 
 
 namespace details {
-//inline
-//arma::cx_cube momentum_matrices(const arma::uvec & grid,
-//                                const arma::mat & ranges,
-//                                const arma::uword dim,
-//                                const arma::uword layers) {
-//  arma::cx_double
-//}
+inline
+arma::cx_cube momentum_matrices(const arma::uvec & grid,
+                                const arma::mat & ranges,
+                                const arma::uword dim,
+                                const arma::uword layers) {
+
+  const arma::cx_cube unit_momentum_matrices =
+      dvr::details::momentum_matrices(grid, ranges, dim);
+
+  arma::cx_cube result(unit_momentum_matrices.n_rows * layers,
+      unit_momentum_matrices.n_rows * layers,
+      unit_momentum_matrices.n_slices);
+
+#pragma omp parallel for
+  for(arma::uword i=0;i<result.n_slices; i++) {
+    arma::cx_mat grand_momentum_matrix(arma::size(result.slice(0)), arma::fill::zeros);
+    for(arma::uword j=0; j<layers; j++) {
+      grand_momentum_matrix(arma::span(j * unit_momentum_matrices.n_rows,
+                                       (j+1) * unit_momentum_matrices.n_rows - 1),
+                            arma::span(j * unit_momentum_matrices.n_rows,
+                                       (j+1) * unit_momentum_matrices.n_cols - 1)) =
+                                unit_momentum_matrices.slice(i);
+    }
+
+    result.slice(i) = grand_momentum_matrix;
+  }
+
+  return result;
+}
 
 inline
-arma::cube position_matrices(const arma::mat & points) {
-  arma::cube result = arma::cube(points.n_cols, points.n_cols, points.n_rows);
+arma::cube position_matrices(const arma::mat & points,
+                             const arma::uword layers) {
+
+  const arma::cube unit_position_matrices =
+      dvr::details::position_matrices(points);
+
+  arma::cube result(unit_position_matrices.n_rows * layers,
+                       unit_position_matrices.n_rows * layers,
+                       unit_position_matrices.n_slices);
+
 #pragma omp parallel for
-  for (arma::uword i = 0; i < points.n_rows; i++) {
-    result.slice(i) = arma::diagmat(points.row(i));
+  for(arma::uword i=0;i<result.n_slices; i++) {
+    arma::mat grand_position_matrix(arma::size(result.slice(0)), arma::fill::zeros);
+    for(arma::uword j=0; j<layers; j++) {
+      grand_position_matrix(arma::span(j, j + unit_position_matrices.n_rows - 1),
+                            arma::span(j, j + unit_position_matrices.n_cols - 1)) =
+          unit_position_matrices.slice(i);
+    }
+
+    result.slice(i) = grand_position_matrix;
   }
 
   return result;
@@ -62,9 +99,9 @@ public:
       grid(grid),
       ranges(range),
       masses(masses),
-      positional_matrices(dvr::details::position_matrices(points)),
+      positional_matrices(details::position_matrices(points, initial.size())),
       momentum_matrices(
-          dvr::details::momentum_matrices(grid, range, range.n_rows)),
+          details::momentum_matrices(grid, range, range.n_rows, initial.size())),
       layers(initial.size()) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
@@ -88,9 +125,9 @@ public:
       grid(grid),
       ranges(range),
       masses(arma::ones<arma::vec>(grid.n_elem)),
-      positional_matrices(dvr::details::position_matrices(points)),
+      positional_matrices(details::position_matrices(points, initial.size())),
       momentum_matrices(
-          dvr::details::momentum_matrices(grid, range, range.n_rows)),
+          details::momentum_matrices(grid, range, range.n_rows, initial.size())),
       layers(initial.size()) {
     if (grid.n_rows != ranges.n_rows) {
       throw Error("Different dimension between the grid and the range");
@@ -192,7 +229,7 @@ public:
       result(i) = std::real(dimension_result);
     }
 
-    return result / this->norm() / this->norm();
+    return result / arma::sum(this->norm() % this->norm());
   }
 
   inline
@@ -207,7 +244,7 @@ public:
       result(i) = std::real(dimension_result);
     }
 
-    return result / this->norm() / this->norm();
+    return result / arma::sum(this->norm() % this->norm());
   }
 
   inline
@@ -328,8 +365,18 @@ public:
   }
 
   inline
-  double norm() const {
-    return arma::norm(this->coefs);
+  arma::vec norm() const {
+
+    arma::vec result(this->layers);
+
+    const auto rows = this->coefs.n_elem / this->layers;
+
+#pragma omp parallel for
+    for(arma::uword i=0; i < this->layers; i++) {
+      result(i) = arma::norm(this->coefs.rows(arma::span(i * rows, (i+1) * rows - 1)));
+    }
+
+    return result;
   }
 };
 
@@ -339,12 +386,12 @@ private:
   PropagationType type = Schrotinger;
 
 public:
-  arma::Mat<cx_double> hamiltonian;
+  arma::cx_mat hamiltonian;
 
   template<typename Potential>
   Operator(const State & state,
-           const Potential & potential) :
-      hamiltonian(state.hamiltonian_matrix(potential)) {}
+           const arma::field<Potential> & potentials) :
+      hamiltonian(state.hamiltonian_matrix(potentials)) {}
 
   template<typename T>
   Operator(const arma::Mat<T> & operator_matrix) :
