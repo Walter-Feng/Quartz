@@ -319,6 +319,8 @@ public:
 
     return result;
   }
+
+  State & operator=(const State &) = default;
 };
 
 struct Operator {

@@ -305,13 +305,13 @@ public:
   }
 
   template<typename Function>
-  double expectation(const Function & observable) const {
+  arma::vec expectation(const Function & observable) const {
     const std::vector<cwa::State> transformed = this->wigner_transform();
 
-    std::vector<arma::vec> result(this->layers);
+    arma::vec result(this->layers);
 
     for(auto i=0; i<this->layers; i++) {
-      result[i] = transformed[i].expectation(observable);
+      result(i) = transformed[i].expectation(observable);
     }
 
     return result;

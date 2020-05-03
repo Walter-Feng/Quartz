@@ -179,7 +179,7 @@ public:
     return State(change_list, state.weights, state.masses);
   }
 
-  Operator operator=(const Operator &) = default;
+  Operator & operator=(const Operator &) = default;
 
 };
 

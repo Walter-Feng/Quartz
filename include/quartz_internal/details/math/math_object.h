@@ -44,7 +44,7 @@ struct ElementaryFunction {
     return std::visit(visit_derivative, this->value);
   }
 
-  ElementaryFunction operator=(const ElementaryFunction &) = default;
+  ElementaryFunction & operator=(const ElementaryFunction &) = default;
 };
 
 template<typename T>
@@ -229,7 +229,7 @@ public:
     return MathObject(*this, MathObject(obj), math::OperatorType::Divide);
   }
 
-  MathObject operator=(const MathObject &) = default;
+  MathObject & operator=(const MathObject &) = default;
 };
 
 

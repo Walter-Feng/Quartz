@@ -47,6 +47,20 @@ if (${ARMADILLO_FOUND})
     include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
     target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
 endif ()
+
+find_package(
+        HDF5
+)
+
+if (${HDF5_FOUND})
+    message("Found HDF5 Library,")
+    message("     HDF5_VERSION: " ${HDF5_VERSION_STRINcatchG})
+    message("     HDF5_LIBRARIES   : " ${HDF5_LIBRARIES})
+    message("     HDF5_INCLUDE_DIRS: " ${HDF5_INCLUDE_DIRS})
+
+    include_directories(SYSTEM ${HDF5_INCLUDE_DIRS})
+    target_link_libraries(quartz ${HDF5_LIBRARIES})
+endif ()
 ######OpenMP######
 
 FIND_PACKAGE(OpenMP)
