@@ -8,6 +8,7 @@
 #include "parse/math/math_object.h"
 #include "parse/methods/cwa.h"
 #include "parse/methods/cwa_smd.h"
+#include "parse/methods/m_dvr.h"
 #include "parse/methods/dvr.h"
 #include "parse/methods/dvr_smd.h"
 #include "parse/methods/g_dvr_smd.h"
@@ -18,12 +19,18 @@ ptree::ptree run(const ptree::ptree & input) {
 
   const std::string method = input.get("method", "dvr");
 
-  const auto initial = parse::gaussian(input.get_child("initial"));
-
-  const auto potential = parse::math_object(input.get_child("potential"));
-
   ptree::ptree result;
   util::put<std::string>(result, "Library", "Quartz");
+
+  if(method == "m_dvr") {
+
+    result.put_child("result", m_dvr(input));
+
+  }
+
+  const auto initial = parse::gaussian(input.get_child("initial"));
+  const auto potential = parse::math_object(input.get_child("potential"));
+
   result.put_child("initial", input.get_child("initial"));
   result.put_child("potential", input.get_child("potential"));
 

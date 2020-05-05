@@ -39,6 +39,23 @@ std::vector<T> get_list(const ptree::ptree & pt) {
   return result;
 }
 
+template<typename Output_type>
+std::vector<Output_type> get_list(const ptree::ptree & pt,
+                                  const std::function<Output_type(const ptree::ptree &)> & parser) {
+
+  std::vector<Output_type> result;
+
+  for (const auto & unit : pt) {
+
+    const std::optional<Output_type> value = parser(unit.second);
+    if (!value) {
+      throw Error("Error reading value");
+    }
+    result.push_back(value);
+  }
+
+  return result;
+}
 
 template<typename T>
 arma::Mat<T> get_mat(const ptree::ptree & list_tree) {
@@ -48,6 +65,30 @@ arma::Mat<T> get_mat(const ptree::ptree & list_tree) {
   for (const auto & line : list_tree) {
     const auto list_elements = arma::Col<T>(get_list<T>(line.second));
     result = arma::join_rows(result, list_elements);
+  }
+
+  return result;
+
+}
+
+template<typename Output_type>
+arma::field<Output_type> get_mat_object(const ptree::ptree & list_tree,
+                                        const std::function<Output_type(const ptree::ptree &)> & parser) {
+
+  std::vector<std::vector<Output_type>> result_in_std_vector;
+
+  for (const auto & line : list_tree) {
+    const auto list_elements = get_list(line, parser);
+    result_in_std_vector.push_back(list_elements);
+  }
+
+  arma::field<Output_type> result(result_in_std_vector.size(), result_in_std_vector[0].size());
+
+#pragma omp parallel for
+  for(arma::uword i=0; i<result.n_rows; i++) {
+    for(arma::uword j=0; j<result.n_cols; j++) {
+      result(i,j) = result_in_std_vector[i][j];
+    }
   }
 
   return result;
