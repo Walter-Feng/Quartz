@@ -9,6 +9,7 @@ namespace cwa_smd_opt {
 namespace details {
 
 struct cwa_smd_opt_param {
+   arma::mat original_points;
    arma::vec expectations_ref;
    std::vector<math::Polynomial<double>> original_operators;
    arma::vec weights;
@@ -55,7 +56,6 @@ arma::mat penalty_function_derivative(
 
   arma::mat result(arma::size(points), arma::fill::zeros);
 
-#pragma omp parallel for
   for(arma::uword i = 0;i<original_operators.size();i++) {
     const long long the_grade = original_operators[i].grade();
     if(the_grade < grade && the_grade > 0) {
@@ -64,13 +64,14 @@ arma::mat penalty_function_derivative(
 
   #pragma omp parallel for
       for(arma::uword j=0;j<points.n_cols;j++) {
-        const math::Polynomial<double> x_derivative = original_operators[i].derivative(0);
-        const math::Polynomial<double> p_derivative = original_operators[i].derivative(1);
+        const arma::vec point = arma::diagmat(scaling) * points.col(j);
+        for(arma::uword k=0; k<points.n_rows / 2; k++) {
+          const math::Polynomial<double> x_derivative = original_operators[i].derivative(k);
+          const math::Polynomial<double> p_derivative = original_operators[i].derivative(k + 1);
 
-        const arma::vec point = points.col(j);
-
-        result(0,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * x_derivative.at(point);
-        result(1,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * p_derivative.at(point);
+          result(k,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * x_derivative.at(point) / arma::sum(weights);
+          result(k + 1,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * p_derivative.at(point) / arma::sum(weights);
+        }
       }
     }
   }
@@ -84,9 +85,8 @@ double penalty_function_gsl_wrapper(const gsl_vector * flattened_points,
                                     void * param) {
 
   const arma::vec arma_flattened_points = gsl::convert_vec(flattened_points);
-  const arma::uword n_cols = arma_flattened_points.n_elem / 2;
-  const arma::mat points = arma::reshape(arma_flattened_points, 2, n_cols);
   const auto converted_param = *(cwa_smd_opt_param *) param;
+  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(converted_param.original_points));
 
   return penalty_function(points,
                           converted_param.expectations_ref,
@@ -102,9 +102,8 @@ void penalty_function_derivative_gsl_wrapper(
     void * param,
     gsl_vector * g ) {
   const arma::vec arma_flattened_points = gsl::convert_vec(flattened_points);
-  const arma::uword n_cols = arma_flattened_points.n_elem / 2;
-  const arma::mat points = arma::reshape(arma_flattened_points, 2, n_cols);
   const auto converted_param = *(cwa_smd_opt_param *) param;
+  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(converted_param.original_points));
 
   const arma::vec result =
       arma::vectorise(
@@ -134,7 +133,7 @@ void penalty_function_fdf_gsl_wrapper(
 }
 
 inline
-arma::cx_vec cwa_optimize(cwa_smd_opt_param input,
+arma::mat cwa_optimize(const cwa_smd_opt_param input,
                           const double initial_step_size,
                           const double tolerance,
                           const double gradient_tolerance,
@@ -142,50 +141,58 @@ arma::cx_vec cwa_optimize(cwa_smd_opt_param input,
 
   /* allocate memory for minimization process */
   const auto minimizer_type = gsl_multimin_fdfminimizer_vector_bfgs2;
-  auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type,
-                                                               12);
+
+  const arma::uword n = input.original_points.n_elem;
+
+  auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type, n);
 
   /* assigning function to minimizer object */
   gsl_multimin_function_fdf minimizer_object;
   minimizer_object.f = &penalty_function_gsl_wrapper;
   minimizer_object.df = &penalty_function_derivative_gsl_wrapper;
   minimizer_object.fdf = &penalty_function_fdf_gsl_wrapper;
-  minimizer_object.n = input.weights.n_elem * 2;
+  minimizer_object.n = n;
   minimizer_object.params = (void *) &input;
 
   /* starting point */
-  const auto a_derivatives = gsl_vector_calloc(12);
+  const arma::vec flattened = arma::vectorise(input.original_points);
+  gsl_vector * points = gsl::convert_vec(flattened);
 
   /* set environment */
   gsl_multimin_fdfminimizer_set(minimizer_environment,
-                                &minimizer_object, a_derivatives,
+                                &minimizer_object, points,
                                 initial_step_size, tolerance);
 
+  std::cout << "debug flag" << std::endl;
   size_t iter = 0;
   int status = GSL_CONTINUE;
   do {
     iter++;
+
     status = gsl_multimin_fdfminimizer_iterate(minimizer_environment);
 
+    std::cout << "debug flag" << std::endl;
+
     if (status) {
+      std::cout << "error" << std::endl;
       throw Error(gsl_strerror(status));
     }
 
     status = gsl_multimin_test_gradient(minimizer_environment->gradient,
                                         gradient_tolerance);
 
+    std::cout << "debug flag" << std::endl;
     if (status == GSL_SUCCESS) {
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
 
       gsl_multimin_fdfminimizer_free(minimizer_environment);
-      gsl_vector_free(a_derivatives);
+      gsl_vector_free(points);
 
-      return arma::cx_vec{result.rows(arma::span(0, 5)),
-                          result.rows(arma::span(6, 11))};
+      return arma::reshape(result, arma::size(input.original_points));
     }
   } while (status == GSL_CONTINUE && iter < total_steps);
 
-  return arma::ones<arma::cx_vec>(6) * 2.8375;
+  return arma::randu(6,6) * 2.8375;
 }
 
 } // namespace details
