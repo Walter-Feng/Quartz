@@ -49,28 +49,27 @@ TEST_CASE("Optimisation of cwa smd method") {
 
       arma::vec perturbation = arma::vectorise(points) + rand_perturbation;
       const arma::mat ref_points = arma::reshape(perturbation, 2, 25);
-      perturbation(i) += 1e-7;
+      perturbation(i) += 1e-11;
       const arma::mat wrapped_perturbation = arma::reshape(perturbation, 2, 25);
       const arma::mat symbolic =
           details::penalty_function_derivative(ref_points,ref_expectation, observable_list, weights, scaling, 4);
 
-//      const auto numerical =
-//          (details::penalty_function(wrapped_perturbation, ref_expectation, observable_list, weights, scaling, 4)
-//            - details::penalty_function(ref_points, ref_expectation, observable_list, weights, scaling, 4)
-//          ) / 1e-7;
+      const auto numerical =
+          (details::penalty_function(wrapped_perturbation, ref_expectation, observable_list, weights, scaling, 4)
+            - details::penalty_function(ref_points, ref_expectation, observable_list, weights, scaling, 4)
+          ) / 1e-11;
 
-//      std::cout << symbolic(i) << " v.s. " << numerical  << std::endl;
-//      CHECK(std::abs(numerical - symbolic(i)) / std::abs(symbolic(i)) < 5e-4);
+      CHECK(std::abs(numerical - symbolic(i)) / std::abs(symbolic(i)) < 5e-3);
     }
 
     }
-//
+
   SECTION("a derivative minimization") {
 
-
+    const arma::mat perturbation = arma::randu(2, 25) / 1e3;
     details::cwa_smd_opt_param input;
 
-    input.original_points = points;
+    input.original_points = arma::randu(2,25);
     input.
         expectations_ref = ref_expectation;
     input.
@@ -88,7 +87,7 @@ TEST_CASE("Optimisation of cwa smd method") {
 
 
     details::cwa_optimize(input, initial_step_size, tolerance,
-                          gradient_tolerance, total_steps).print();
+                          gradient_tolerance, total_steps);
 
   }
 }

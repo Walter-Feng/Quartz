@@ -229,7 +229,8 @@ add_executable(test_methods
         test/details/methods/cwa_smd_opt_test.cpp
         test/details/methods/dvr_smd_test.cpp
         test/details/methods/g_cwa_smd_test.cpp
-        test/details/methods/heller_cwa_test.cpp)
+        #test/details/methods/heller_cwa_test.cpp
+        )
 #test/details/methods/heller_gaussian_test.cpp
 
 target_link_libraries(test_methods catch2 quartz)

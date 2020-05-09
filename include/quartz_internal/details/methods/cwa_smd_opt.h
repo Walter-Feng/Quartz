@@ -9,12 +9,12 @@ namespace cwa_smd_opt {
 namespace details {
 
 struct cwa_smd_opt_param {
-   arma::mat original_points;
-   arma::vec expectations_ref;
-   std::vector<math::Polynomial<double>> original_operators;
-   arma::vec weights;
-   arma::vec scaling;
-   long long grade;
+  arma::mat original_points;
+  arma::vec expectations_ref;
+  std::vector<math::Polynomial<double>> original_operators;
+  arma::vec weights;
+  arma::vec scaling;
+  long long grade;
 };
 
 
@@ -29,12 +29,12 @@ double penalty_function(
 
   double result = 0;
 
-#pragma omp parallel for
-  for(arma::uword i = 0;i<original_operators.size();i++) {
+  for (arma::uword i = 0; i < original_operators.size(); i++) {
     const long long the_grade = original_operators[i].grade();
-    if(the_grade < grade && the_grade > 0) {
+    if (the_grade < grade && the_grade > 0) {
       const double result_from_cwa =
-          cwa_smd::details::expectation(original_operators[i], points, weights, scaling);
+          cwa_smd::details::expectation(original_operators[i], points, weights,
+                                        scaling);
 
       result += std::pow(result_from_cwa - expectations_ref(i), 2);
     }
@@ -52,31 +52,37 @@ arma::mat penalty_function_derivative(
     const arma::vec & weights,
     const arma::vec & scaling,
     const long long grade
-    ) {
+) {
 
   arma::mat result(arma::size(points), arma::fill::zeros);
 
-  for(arma::uword i = 0;i<original_operators.size();i++) {
+  for (arma::uword i = 0; i < original_operators.size(); i++) {
     const long long the_grade = original_operators[i].grade();
-    if(the_grade < grade && the_grade > 0) {
-    const double result_from_cwa =
-        cwa_smd::details::expectation(original_operators[i], points, weights, scaling);
+    if (the_grade < grade && the_grade > 0) {
+      const double result_from_cwa =
+          cwa_smd::details::expectation(original_operators[i], points, weights,
+                                        scaling);
 
-  #pragma omp parallel for
-      for(arma::uword j=0;j<points.n_cols;j++) {
+      for (arma::uword j = 0; j < points.n_cols; j++) {
         const arma::vec point = arma::diagmat(scaling) * points.col(j);
-        for(arma::uword k=0; k<points.n_rows / 2; k++) {
-          const math::Polynomial<double> x_derivative = original_operators[i].derivative(k);
-          const math::Polynomial<double> p_derivative = original_operators[i].derivative(k + 1);
+        for (arma::uword k = 0; k < points.n_rows / 2; k++) {
+          const math::Polynomial<double> x_derivative = original_operators[i].derivative(
+              k);
+          const math::Polynomial<double> p_derivative = original_operators[i].derivative(
+              k + 1);
 
-          result(k,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * x_derivative.at(point) / arma::sum(weights);
-          result(k + 1,j) += 2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) * p_derivative.at(point) / arma::sum(weights);
+          result(k, j) -=
+              2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) *
+              x_derivative.at(point) / arma::sum(weights);
+          result(k + 1, j) -=
+              2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) *
+              p_derivative.at(point) / arma::sum(weights);
         }
       }
     }
   }
 
-  return result;
+  return -result;
 
 }
 
@@ -86,7 +92,8 @@ double penalty_function_gsl_wrapper(const gsl_vector * flattened_points,
 
   const arma::vec arma_flattened_points = gsl::convert_vec(flattened_points);
   const auto converted_param = *(cwa_smd_opt_param *) param;
-  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(converted_param.original_points));
+  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(
+      converted_param.original_points));
 
   return penalty_function(points,
                           converted_param.expectations_ref,
@@ -100,19 +107,20 @@ inline
 void penalty_function_derivative_gsl_wrapper(
     const gsl_vector * flattened_points,
     void * param,
-    gsl_vector * g ) {
+    gsl_vector * g) {
   const arma::vec arma_flattened_points = gsl::convert_vec(flattened_points);
   const auto converted_param = *(cwa_smd_opt_param *) param;
-  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(converted_param.original_points));
+  const arma::mat points = arma::reshape(arma_flattened_points, arma::size(
+      converted_param.original_points));
 
   const arma::vec result =
       arma::vectorise(
-        penalty_function_derivative(points,
-                                    converted_param.expectations_ref,
-                                    converted_param.original_operators,
-                                    converted_param.weights,
-                                    converted_param.scaling,
-                                    converted_param.grade));
+          penalty_function_derivative(points,
+                                      converted_param.expectations_ref,
+                                      converted_param.original_operators,
+                                      converted_param.weights,
+                                      converted_param.scaling,
+                                      converted_param.grade));
 
   const auto result_pointer = gsl::convert_vec(result);
 
@@ -126,7 +134,7 @@ void penalty_function_fdf_gsl_wrapper(
     const gsl_vector * a_derivatives,
     void * param,
     double * f,
-    gsl_vector * g ) {
+    gsl_vector * g) {
   penalty_function_derivative_gsl_wrapper(a_derivatives, param, g);
 
   *f = penalty_function_gsl_wrapper(a_derivatives, param);
@@ -134,17 +142,18 @@ void penalty_function_fdf_gsl_wrapper(
 
 inline
 arma::mat cwa_optimize(const cwa_smd_opt_param input,
-                          const double initial_step_size,
-                          const double tolerance,
-                          const double gradient_tolerance,
-                          const size_t total_steps) {
+                       const double initial_step_size,
+                       const double tolerance,
+                       const double gradient_tolerance,
+                       const size_t total_steps) {
 
   /* allocate memory for minimization process */
   const auto minimizer_type = gsl_multimin_fdfminimizer_vector_bfgs2;
 
   const arma::uword n = input.original_points.n_elem;
 
-  auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type, n);
+  auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type,
+                                                               n);
 
   /* assigning function to minimizer object */
   gsl_multimin_function_fdf minimizer_object;
@@ -163,7 +172,6 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
                                 &minimizer_object, points,
                                 initial_step_size, tolerance);
 
-  std::cout << "debug flag" << std::endl;
   size_t iter = 0;
   int status = GSL_CONTINUE;
   do {
@@ -171,17 +179,13 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
 
     status = gsl_multimin_fdfminimizer_iterate(minimizer_environment);
 
-    std::cout << "debug flag" << std::endl;
-
     if (status) {
-      std::cout << "error" << std::endl;
       throw Error(gsl_strerror(status));
     }
 
     status = gsl_multimin_test_gradient(minimizer_environment->gradient,
                                         gradient_tolerance);
 
-    std::cout << "debug flag" << std::endl;
     if (status == GSL_SUCCESS) {
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
 
@@ -192,7 +196,7 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
     }
   } while (status == GSL_CONTINUE && iter < total_steps);
 
-  return arma::randu(6,6) * 2.8375;
+  return arma::randu(6, 6) * 2.8375;
 }
 
 } // namespace details
@@ -406,7 +410,7 @@ public:
   }
 
   template<typename T>
-  auto expectation(const math::Polynomial <T> & polynomial) const {
+  auto expectation(const math::Polynomial<T> & polynomial) const {
     return cwa_smd::details::at_search(polynomial,
                                        this->points,
                                        this->weights,
@@ -417,9 +421,9 @@ public:
   }
 
   template<typename T>
-  arma::vec expectation(const std::vector<math::Polynomial < T>>
+  arma::vec expectation(const std::vector<math::Polynomial<T>>
 
-  & polynomials) const {
+                        & polynomials) const {
     arma::vec result(polynomials.size());
 
 #pragma omp parallel for
@@ -436,8 +440,8 @@ struct Operator {
 public:
   math::Polynomial<double> potential;
   math::Polynomial<double> H;
-  std::vector<math::Polynomial < double>> original_operators;
-  std::vector<math::Polynomial < double>> operators;
+  std::vector<math::Polynomial<double>> original_operators;
+  std::vector<math::Polynomial<double>> operators;
 
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
@@ -516,9 +520,9 @@ public:
 };
 
 template<typename Potential>
-OperatorWrapper <Operator, State, Potential>
+OperatorWrapper<Operator, State, Potential>
     cwa_opt = [](const Operator & cwa_smd_opt_operator,
-                 const Potential & potential) -> Propagator <State> {
+                 const Potential & potential) -> Propagator<State> {
   return [&cwa_smd_opt_operator](const State & state,
                                  const double dt) -> State {
     const arma::vec & expectations = state.expectations;
