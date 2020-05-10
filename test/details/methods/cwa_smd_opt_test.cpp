@@ -19,15 +19,12 @@ TEST_CASE("Optimisation of cwa smd method") {
 
   const auto observable_list = polynomial_observables(2,4);
   const arma::vec weights = arma::ones<arma::vec>(points.n_cols);
-  const method::cwa::State ref_state(points, arma::ones<arma::vec>(points.n_cols), arma::vec{1});
+  const arma::vec scaling = arma::ones(2) * 2.0;
+  const arma::mat scaled_points = arma::diagmat(1.0 / scaling) * points;
+  const method::cwa::State ref_state(scaled_points,
+                                     arma::ones<arma::vec>(points.n_cols),
+                                     arma::vec{1});
   const arma::vec ref_expectation = ref_state.expectation(observable_list);
-
-  const arma::vec scaling = arma::ones(2);
-
-  SECTION("Arma basic tests") {
-    const arma::mat original = arma::randu(2,50);
-    CHECK(arma::approx_equal(original, arma::reshape(arma::vectorise(original),2,50), "abs_diff", 1e-16));
-  }
 
   SECTION("Penalty Function") {
     const arma::mat perturbation = arma::randu(2, 25) / 1e3;
@@ -89,6 +86,35 @@ TEST_CASE("Optimisation of cwa smd method") {
     details::cwa_optimize(input, initial_step_size, tolerance,
                           gradient_tolerance, total_steps);
 
+  }
+
+  SECTION("Initial state construction") {
+
+    const method::cwa_smd_opt::State initial_state =
+        method::cwa_smd_opt::State(math::Gaussian<double>(arma::mat{1.}, arma::vec{
+                                   1}).wigner_transform(),
+                               arma::uvec{30, 30},
+                               arma::mat{{-5, 5},
+                                         {-5, 5}}, 3);
+
+    const auto harmonic_potential = math::Polynomial<double>(arma::vec{0.5},
+                                                             lmat{2});
+
+    const auto op = method::cwa_smd_opt::Operator(initial_state, harmonic_potential);
+
+    const auto wrapper =
+        math::runge_kutta_4<method::cwa_smd_opt::Operator,
+            method::cwa_smd_opt::State,
+            math::Polynomial<double>>;
+
+    const auto optimizer =
+        method::cwa_smd_opt::cwa_opt<math::Polynomial<double>>(0.01, 0.1, 0.1, 100);
+
+    const auto all_wrapper = wrapper << optimizer;
+
+    const auto printer = generic_printer<method::cwa_smd_opt::State>;
+
+//    propagate(initial_state, op, wrapper, harmonic_potential, printer, 10, 0.01, 2);
   }
 }
 

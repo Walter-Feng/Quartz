@@ -64,17 +64,17 @@ arma::mat penalty_function_derivative(
                                         scaling);
 
       for (arma::uword j = 0; j < points.n_cols; j++) {
-        const arma::vec point = arma::diagmat(scaling) * points.col(j);
+        const arma::vec point = arma::diagmat(1.0 / scaling) * points.col(j);
         for (arma::uword k = 0; k < points.n_rows / 2; k++) {
           const math::Polynomial<double> x_derivative = original_operators[i].derivative(
-              k);
+              k) / scaling(k);
           const math::Polynomial<double> p_derivative = original_operators[i].derivative(
-              k + 1);
+              k + points.n_rows / 2) / scaling(k + points.n_rows / 2);
 
           result(k, j) -=
               2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) *
               x_derivative.at(point) / arma::sum(weights);
-          result(k + 1, j) -=
+          result(k + points.n_rows / 2, j) -=
               2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) *
               p_derivative.at(point) / arma::sum(weights);
         }
@@ -433,6 +433,8 @@ public:
 
     return result;
   }
+
+  State & operator=(const State &) = default;
 };
 
 struct Operator {
@@ -454,7 +456,9 @@ public:
     std::vector<math::Polynomial<double>>
         original_op(std::pow(state.grade, state.dim() * 2));
 
-    op[0] = math::Polynomial<double>(state.dim() * 2);
+    op[0] = math::Polynomial<double>(state.dim() * 2, 0.0);
+    original_op[0] = math::Polynomial<double>(state.dim() * 2, 1.0);
+
 
     for (arma::uword i = 1; i < op.size(); i++) {
       const auto observable =
@@ -462,6 +466,8 @@ public:
                                                           math::space::index_to_indices(
                                                               i,
                                                               state.expectation_table)));
+
+      original_op[i] = observable;
 
       const arma::uword cut_off = std::min(observable.grade(), H.grade()) / 2;
       const auto moyal =
@@ -472,6 +478,7 @@ public:
     }
 
     this->operators = op;
+    this->original_operators = original_op;
   }
 
 
@@ -521,17 +528,42 @@ public:
 
 template<typename Potential>
 OperatorWrapper<Operator, State, Potential>
-    cwa_opt = [](const Operator & cwa_smd_opt_operator,
-                 const Potential & potential) -> Propagator<State> {
-  return [&cwa_smd_opt_operator](const State & state,
-                                 const double dt) -> State {
-    const arma::vec & expectations = state.expectations;
-    const arma::uvec & expectations_table = state.expectation_table;
-    const arma::vec & points = state.points;
+    cwa_opt(const double initial_step_size,
+            const double tolerance,
+            const double gradient_tolerance,
+            const size_t total_steps) {
+  return [initial_step_size,
+          tolerance,
+          gradient_tolerance,
+          total_steps
+          ](const Operator & cwa_smd_opt_operator,
+            const Potential & potential) -> Propagator<State> {
+                return [initial_step_size,
+                    tolerance,
+                    gradient_tolerance,
+                    total_steps,
+                    &cwa_smd_opt_operator
+                    ]
+                    (const State & state,
+                     const double dt) -> State {
+                        const arma::vec & ref_expectations = state.expectations;
+                        const arma::vec & points = state.points;
+                        const auto & original_operators = cwa_smd_opt_operator.original_operators;
 
-    return state;
-  };
-};
+                        details::cwa_smd_opt_param input{points, ref_expectations, original_operators,
+                                                         state.weights, state.scaling, (long long) state.grade};
+
+
+                        const arma::mat new_points =
+                            details::cwa_optimize(input, initial_step_size,
+                            tolerance,gradient_tolerance, total_steps);
+
+                        State new_state = state;
+                        new_state.points = new_points;
+                        return new_state;
+                };
+            };
+}
 
 } // namespace cwa
 }
