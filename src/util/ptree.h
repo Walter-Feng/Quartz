@@ -51,7 +51,7 @@ std::vector<Output_type> get_list(const ptree::ptree & pt,
     if (!value) {
       throw Error("Error reading value");
     }
-    result.push_back(value);
+    result.push_back(value.value());
   }
 
   return result;
@@ -77,8 +77,8 @@ arma::field<Output_type> get_mat_object(const ptree::ptree & list_tree,
 
   std::vector<std::vector<Output_type>> result_in_std_vector;
 
-  for (const auto & line : list_tree) {
-    const auto list_elements = get_list(line, parser);
+  for (const auto line : list_tree) {
+    const auto list_elements = get_list(line.second, parser);
     result_in_std_vector.push_back(list_elements);
   }
 

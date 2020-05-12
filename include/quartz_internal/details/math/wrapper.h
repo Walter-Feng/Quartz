@@ -229,7 +229,11 @@ public:
     return MathObject(*this, MathObject(obj), math::OperatorType::Divide);
   }
 
-  MathObject & operator=(const MathObject &) = default;
+  MathObject & operator=(const MathObject & obj) {
+    return * clone(& obj).get();
+  }
+
+  MathObject & operator=(MathObject && other) = default;
 };
 
 

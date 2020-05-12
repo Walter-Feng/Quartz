@@ -8,6 +8,7 @@
 #include "parse/math/math_object.h"
 #include "parse/methods/cwa.h"
 #include "parse/methods/cwa_smd.h"
+#include "parse/methods/cwa_smd_opt.h"
 #include "parse/methods/m_dvr.h"
 #include "parse/methods/dvr.h"
 #include "parse/methods/dvr_smd.h"
@@ -45,6 +46,10 @@ ptree::ptree run(const ptree::ptree & input) {
   } else if (method == "cwa_smd") {
 
     result.put_child("result", cwa_smd(input, potential, initial));
+
+  } else if (method == "cwa_smd_opt") {
+
+    result.put_child("result", cwa_smd_opt(input, potential, initial));
 
   } else if (method == "dvr_smd") {
 

@@ -66,10 +66,12 @@ arma::mat penalty_function_derivative(
       for (arma::uword j = 0; j < points.n_cols; j++) {
         const arma::vec point = arma::diagmat(1.0 / scaling) * points.col(j);
         for (arma::uword k = 0; k < points.n_rows / 2; k++) {
-          const math::Polynomial<double> x_derivative = original_operators[i].derivative(
-              k) / scaling(k);
-          const math::Polynomial<double> p_derivative = original_operators[i].derivative(
-              k + points.n_rows / 2) / scaling(k + points.n_rows / 2);
+          const math::Polynomial<double> x_derivative =
+              original_operators[i].derivative(
+                  k) / scaling(k);
+          const math::Polynomial<double> p_derivative =
+              original_operators[i].derivative(
+                  k + points.n_rows / 2) / scaling(k + points.n_rows / 2);
 
           result(k, j) -=
               2.0 * (result_from_cwa - expectations_ref(i)) * weights(j) *
@@ -152,6 +154,25 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
 
   const arma::uword n = input.original_points.n_elem;
 
+  const auto penalty_function_value = penalty_function(input.original_points,
+                                                       input.expectations_ref,
+                                                       input.original_operators,
+                                                       input.weights,
+                                                       input.scaling,
+                                                       input.grade);
+
+  const double gradient_module = arma::norm(
+      arma::vectorise(penalty_function_derivative(input.original_points,
+                                                  input.expectations_ref,
+                                                  input.original_operators,
+                                                  input.weights,
+                                                  input.scaling,
+                                                  input.grade)));
+
+  if(penalty_function_value < tolerance && gradient_module < gradient_tolerance) {
+    return input.original_points;
+  }
+
   auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type,
                                                                n);
 
@@ -196,7 +217,7 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
     }
   } while (status == GSL_CONTINUE && iter < total_steps);
 
-  return arma::randu(6, 6) * 2.8375;
+  throw Error("fail to converge towards the solution");
 }
 
 } // namespace details
@@ -243,6 +264,7 @@ public:
     const arma::vec ranges = range.col(1) - range.col(0);
     this->scaling = ranges;
 
+//    this->scaling = arma::ones(arma::size(ranges));
 
     // exponents check in
 #pragma omp parallel for
@@ -298,6 +320,7 @@ public:
 
     const arma::vec ranges = range.col(1) - range.col(0);
     this->scaling = ranges;
+//    this->scaling = arma::ones(arma::size(ranges));
 
     // exponents check in
     for (arma::uword i = 0; i < dimension / 2; i++) {
@@ -528,41 +551,43 @@ public:
 
 template<typename Potential>
 OperatorWrapper<Operator, State, Potential>
-    cwa_opt(const double initial_step_size,
-            const double tolerance,
-            const double gradient_tolerance,
-            const size_t total_steps) {
+cwa_opt(const double initial_step_size,
+        const double tolerance,
+        const double gradient_tolerance,
+        const size_t total_steps) {
   return [initial_step_size,
-          tolerance,
-          gradient_tolerance,
-          total_steps
-          ](const Operator & cwa_smd_opt_operator,
-            const Potential & potential) -> Propagator<State> {
-                return [initial_step_size,
-                    tolerance,
-                    gradient_tolerance,
-                    total_steps,
-                    &cwa_smd_opt_operator
-                    ]
-                    (const State & state,
-                     const double dt) -> State {
-                        const arma::vec & ref_expectations = state.expectations;
-                        const arma::vec & points = state.points;
-                        const auto & original_operators = cwa_smd_opt_operator.original_operators;
+      tolerance,
+      gradient_tolerance,
+      total_steps
+  ](const Operator & cwa_smd_opt_operator,
+    const Potential & potential) -> Propagator<State> {
+    return [initial_step_size,
+        tolerance,
+        gradient_tolerance,
+        total_steps,
+        &cwa_smd_opt_operator
+    ]
+        (const State & state,
+         const double dt) -> State {
+      const arma::vec & ref_expectations = state.expectations;
+      const arma::mat & points = state.points;
+      const auto & original_operators = cwa_smd_opt_operator.original_operators;
 
-                        details::cwa_smd_opt_param input{points, ref_expectations, original_operators,
-                                                         state.weights, state.scaling, (long long) state.grade};
+      details::cwa_smd_opt_param input{points, ref_expectations,
+                                       original_operators,
+                                       state.weights, state.scaling,
+                                       (long long) state.grade};
 
 
-                        const arma::mat new_points =
-                            details::cwa_optimize(input, initial_step_size,
-                            tolerance,gradient_tolerance, total_steps);
+      const arma::mat new_points =
+          details::cwa_optimize(input, initial_step_size,
+                                tolerance, gradient_tolerance, total_steps);
 
-                        State new_state = state;
-                        new_state.points = new_points;
-                        return new_state;
-                };
-            };
+      State new_state = state;
+      new_state.points = new_points;
+      return new_state;
+    };
+  };
 }
 
 } // namespace cwa

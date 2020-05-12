@@ -110,7 +110,7 @@ public:
       throw Error("Different dimension between the grid and the masses");
     }
 
-    for(auto i=0; i<initial.size(); i++) {
+    for(unsigned long i=0; i<initial.size(); i++) {
       this->coefs = arma::join_cols(this->coefs,
           arma::conv_to<arma::cx_vec>::from(at(initial[i], points)));
     }
@@ -201,7 +201,8 @@ public:
       arma::cx_mat row_result;
       for(arma::uword j=0; j<potential.n_cols; j++) {
 
-        const arma::cx_mat potential_diag = arma::diagmat(at(potential(i,j), this->points));
+        const arma::cx_mat potential_diag =
+            arma::conv_to<arma::cx_mat>::from(arma::diagmat(at(potential(i,j), this->points)));
 
         if(i==j) {
           row_result = arma::join_rows(row_result,

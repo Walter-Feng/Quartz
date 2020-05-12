@@ -152,7 +152,6 @@ if (HAVE_EXE)
                 src/parse/math/polynomial.cpp
                 src/parse/math/gaussian.cpp
                 src/parse/math/math_object.cpp
-                src/parse/methods/cwa.cpp
                 src/parse/methods/m_dvr.cpp
                 )
 

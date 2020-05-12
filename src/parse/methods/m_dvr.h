@@ -7,7 +7,6 @@ namespace quartz {
 
 namespace ptree = boost::property_tree;
 
-inline
 ptree::ptree m_dvr(const ptree::ptree & input);
 
 }
