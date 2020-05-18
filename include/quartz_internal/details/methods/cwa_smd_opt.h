@@ -210,9 +210,6 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
     if (status == GSL_SUCCESS) {
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
 
-      std::cout << std::endl << "PF : " << minimizer_environment->f
-                << " v.s. " << tolerance << std::endl;
-
       gsl_multimin_fdfminimizer_free(minimizer_environment);
       gsl_vector_free(points);
 
