@@ -23,6 +23,12 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
   const arma::mat range =
       util::get_mat<double>(input.get_child("range")).t();
 
+  const arma::vec mean = arma::real(initial.mean());
+  arma::vec scaling = arma::join_cols(mean, mean);
+  if(input.get_child_optional("scaling")) {
+    scaling = arma::vec(util::get_list<double>(input.get_child("scaling")));
+  }
+
   const auto steps = input.get<arma::uword>("steps");
   const auto dt = input.get<double>("dt");
   const arma::uword grade = input.get<double>("grade", 4) + 1;
@@ -39,7 +45,7 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
   const arma::uword max_iter = input.get<arma::uword>("max_iter", 100);
 
   method::cwa_smd_opt::State initial_state(initial.wigner_transform(), grid,
-                                           range,
+                                           range, scaling,
                                            masses, grade);
   method::cwa_smd_opt::Operator op(initial_state, potential);
   auto wrapper =
@@ -58,7 +64,9 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
 
   auto printer_pair = printer(input, result, initial_state);
 
-  propagate(initial_state, op, wrapper << optimizer, potential,
+  const auto propagator = wrapper << optimizer;
+
+  propagate(initial_state, op, propagator, potential,
             printer_pair.first, steps,
             dt, printer_pair.second);
 
@@ -70,7 +78,7 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
                          const MathObject<double> & potential,
                          const Initial & initial) {
 
-  return cwa_smd(input, parse::polynomial(potential), initial);
+  return cwa_smd_opt(input, parse::polynomial(potential), initial);
 }
 
 }

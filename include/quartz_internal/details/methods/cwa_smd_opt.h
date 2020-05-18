@@ -210,6 +210,9 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
     if (status == GSL_SUCCESS) {
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
 
+      std::cout << std::endl << "PF : " << minimizer_environment->f
+                << " v.s. " << tolerance << std::endl;
+
       gsl_multimin_fdfminimizer_free(minimizer_environment);
       gsl_vector_free(points);
 
@@ -239,6 +242,7 @@ public:
   State(const PhaseSpaceDistribution & initial,
         const arma::uvec & grid,
         const arma::mat & range,
+        const arma::vec & scaling,
         const arma::vec & masses,
         const arma::uword grade) :
       points(math::space::points_generate(grid, range)),
@@ -246,7 +250,8 @@ public:
       masses(masses),
       grade(grade),
       expectation_table(math::space::grids_to_table(
-          grade * arma::ones<arma::uvec>(points.n_rows))) {
+          grade * arma::ones<arma::uvec>(points.n_rows))),
+      scaling(scaling) {
     if (grid.n_rows != range.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -262,9 +267,6 @@ public:
     this->momentum_indices = arma::uvec(dimension / 2);
 
     const arma::vec ranges = range.col(1) - range.col(0);
-    this->scaling = ranges;
-
-//    this->scaling = arma::ones(arma::size(ranges));
 
     // exponents check in
 #pragma omp parallel for
@@ -577,7 +579,6 @@ cwa_opt(const double initial_step_size,
                                        original_operators,
                                        state.weights, state.scaling,
                                        (long long) state.grade};
-
 
       const arma::mat new_points =
           details::cwa_optimize(input, initial_step_size,

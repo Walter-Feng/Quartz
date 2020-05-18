@@ -64,5 +64,25 @@ std::vector<math::Polynomial<double>> polynomial_observables(
 }
 
 
+inline
+std::vector<math::Polynomial<double>> restricted_polynomial_observables(
+    const arma::uword dim,
+    const arma::uword grade) {
+
+  std::vector<math::Polynomial<double>> op;
+  const arma::uvec grid = grade * arma::ones<arma::uvec>(dim);
+  const arma::uvec table = math::space::grids_to_table(grid);
+
+  for (arma::uword i = 1; i < std::pow(grade, dim); i++) {
+
+    const arma::uvec exponents = math::space::index_to_indices(i,table);
+    if(arma::sum(exponents) < grade) {
+      op.push_back(math::Polynomial(math::polynomial::Term<double>(1.0, exponents)));
+    }
+  }
+
+  return op;
+}
+
 
 #endif //UTIL_AUTO_GENERATOR_H

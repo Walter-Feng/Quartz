@@ -39,7 +39,7 @@ std::pair<Printer<State>, int> printer(const ptree::ptree & input,
 
         arma::uword grade = printer_input.get("grade", 2);
 
-        const std::vector<math::Polynomial<double>> op = polynomial_observables(
+        const std::vector<math::Polynomial<double>> op = restricted_polynomial_observables(
             2 * state.dim(), grade);
 
         if (!mute)
@@ -56,7 +56,7 @@ std::pair<Printer<State>, int> printer(const ptree::ptree & input,
         std::vector<math::Polynomial<double>>)>::value) {
       if (type == "expectation") {
         arma::uword grade = printer_input.get("grade", 2);
-        const auto op = polynomial_observables(state.dim(), grade);
+        const auto op = restricted_polynomial_observables(2 * state.dim(), grade);
         return {expectation_printer<State>(op), print_level};
       }
     } else throw Error("The printer required is not supported");
