@@ -268,13 +268,14 @@ public:
 
   template<typename T>
   auto expectation(const math::Polynomial <T> & polynomial) const {
+
     return details::at_search(polynomial,
                               this->points,
                               this->weights,
                               this->expectations,
                               this->expectation_table,
                               this->scaling,
-                              this->grade);
+                              this->grade) * polynomial.at(this->scaling);
   }
 
   template<typename T>

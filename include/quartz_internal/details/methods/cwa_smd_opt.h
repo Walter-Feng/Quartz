@@ -439,7 +439,7 @@ public:
                                        this->expectations,
                                        this->expectation_table,
                                        this->scaling,
-                                       this->grade);
+                                       this->grade) * polynomial.at(this->scaling);
   }
 
   template<typename T>
