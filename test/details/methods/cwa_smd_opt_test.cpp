@@ -96,7 +96,7 @@ TEST_CASE("Optimisation of cwa smd method") {
 
 
     details::cwa_optimize(input, initial_step_size, tolerance,
-                          gradient_tolerance, total_steps);
+                          gradient_tolerance, total_steps, "bfgs2");
 
   }
 
@@ -115,7 +115,7 @@ TEST_CASE("Optimisation of cwa smd method") {
 
     const auto optimizer =
         method::cwa_smd_opt::cwa_opt<math::Polynomial<double>>(0.01, 0.1, 0.1,
-                                                               100);
+                                                               100, "bfgs2");
 
     const auto all_wrapper = wrapper << optimizer;
 

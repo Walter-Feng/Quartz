@@ -8,6 +8,24 @@ namespace method {
 namespace cwa_smd_opt {
 namespace details {
 
+inline
+gsl_multimin_fdfminimizer_type * minimizer_map(const std::string type) {
+  if(type == "steepest_descent") {
+    return const_cast<gsl_multimin_fdfminimizer_type *>(gsl_multimin_fdfminimizer_steepest_descent);
+  } else if(type == "conjugate_pr") {
+    return const_cast<gsl_multimin_fdfminimizer_type *>(gsl_multimin_fdfminimizer_conjugate_pr);
+  } else if(type == "conjugate_fr") {
+    return const_cast<gsl_multimin_fdfminimizer_type *>(gsl_multimin_fdfminimizer_conjugate_fr);
+  } else if(type == "bfgs") {
+    return const_cast<gsl_multimin_fdfminimizer_type *>(gsl_multimin_fdfminimizer_vector_bfgs);
+  } else if(type == "bfgs2") {
+    return const_cast<gsl_multimin_fdfminimizer_type *>(gsl_multimin_fdfminimizer_vector_bfgs2);
+  } else {
+    throw Error("minimizer " + type + " is not implemented");
+  }
+
+}
+
 struct cwa_smd_opt_param {
   arma::mat original_points;
   arma::vec expectations_ref;
@@ -147,10 +165,11 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
                        const double initial_step_size,
                        const double tolerance,
                        const double gradient_tolerance,
-                       const size_t total_steps) {
+                       const size_t total_steps,
+                       const std::string type) {
 
   /* allocate memory for minimization process */
-  const auto minimizer_type = gsl_multimin_fdfminimizer_vector_bfgs2;
+  const auto minimizer_type = minimizer_map(type);
 
   const arma::uword n = input.original_points.n_elem;
 
@@ -169,7 +188,8 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
                                                   input.scaling,
                                                   input.grade)));
 
-  if(penalty_function_value < tolerance && gradient_module < gradient_tolerance) {
+  if (penalty_function_value < tolerance &&
+      gradient_module < gradient_tolerance) {
     return input.original_points;
   }
 
@@ -439,7 +459,8 @@ public:
                                        this->expectations,
                                        this->expectation_table,
                                        this->scaling,
-                                       this->grade) * polynomial.at(this->scaling);
+                                       this->grade) *
+           polynomial.at(this->scaling);
   }
 
   template<typename T>
@@ -553,18 +574,21 @@ OperatorWrapper<Operator, State, Potential>
 cwa_opt(const double initial_step_size,
         const double tolerance,
         const double gradient_tolerance,
-        const size_t total_steps) {
+        const size_t total_steps,
+        const std::string type = "bfgs2") {
   return [initial_step_size,
       tolerance,
       gradient_tolerance,
-      total_steps
+      total_steps,
+      type
   ](const Operator & cwa_smd_opt_operator,
     const Potential & potential) -> Propagator<State> {
     return [initial_step_size,
         tolerance,
         gradient_tolerance,
         total_steps,
-        &cwa_smd_opt_operator
+        &cwa_smd_opt_operator,
+        type
     ]
         (const State & state,
          const double dt) -> State {
@@ -579,7 +603,7 @@ cwa_opt(const double initial_step_size,
 
       const arma::mat new_points =
           details::cwa_optimize(input, initial_step_size,
-                                tolerance, gradient_tolerance, total_steps);
+                                tolerance, gradient_tolerance, total_steps, type);
 
       State new_state = state;
       new_state.points = new_points;

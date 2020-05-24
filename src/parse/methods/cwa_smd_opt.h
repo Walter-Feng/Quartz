@@ -43,6 +43,7 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
   const double initial_step_size = input.get<double>("init_step", 0.01);
   const double gradient_tolerance = input.get<double>("gradient_tol", 0.01);
   const arma::uword max_iter = input.get<arma::uword>("max_iter", 100);
+  const std::string optimizer_type = input.get<std::string>("optimizer", "bfgs2");
 
   method::cwa_smd_opt::State initial_state(initial.wigner_transform(), grid,
                                            range, scaling,
@@ -58,7 +59,8 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
       method::cwa_smd_opt::cwa_opt<math::Polynomial<double>>(initial_step_size,
                                                              tolerance,
                                                              gradient_tolerance,
-                                                             max_iter);
+                                                             max_iter,
+                                                             optimizer_type);
 
   ptree::ptree result;
 

@@ -5,7 +5,6 @@ namespace method {
 namespace g_cwa_smd {
 namespace details {
 
-
 template<typename Function>
 auto expectation(const Function & function,
                  const arma::mat & points,
@@ -25,7 +24,7 @@ auto at_search(const math::polynomial::Term <T> & term,
                const arma::uvec & table,
                const arma::uword grade) {
 
-  if ((arma::uword) arma::max(term.exponents) >= grade) {
+  if ((arma::uword) arma::sum(term.exponents) >= grade) {
     return expectation(
         math::GaussianWithPoly(math::Polynomial(term), gaussian),
         points, weights);
