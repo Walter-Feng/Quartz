@@ -10,6 +10,8 @@ namespace quartz {
 
 namespace ptree = boost::property_tree;
 
+
+// Printer + print_level ( which is read from input )
 template<typename State>
 std::pair<Printer<State>, int> printer(const ptree::ptree & input,
                                        ptree::ptree & result,

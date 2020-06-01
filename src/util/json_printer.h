@@ -12,9 +12,11 @@ namespace ptree = boost::property_tree;
 
 template<typename State>
 Printer<State>
-ptree_printer(ptree::ptree & result_tree) {
+ptree_printer(ptree::ptree & result_tree,
+              const std::optional<Printer<State>> additional = std::nullopt,
+              const std::string additional_label = "") {
 
-  return [&result_tree](const State & state,
+  return [&result_tree, additional](const State & state,
                         const arma::uword & index,
                         const double time,
                         const int,
@@ -37,6 +39,10 @@ ptree_printer(ptree::ptree & result_tree) {
     util::put(step_result, "positional", state.positional_expectation());
     util::put(step_result, "momentum", state.positional_expectation());
 
+    if(additional.has_value()) {
+      ptree::ptree additional_ptree;
+
+    }
     result_tree.push_back(std::make_pair("", step_result));
 
     return 0;
