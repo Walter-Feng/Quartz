@@ -161,12 +161,12 @@ void penalty_function_fdf_gsl_wrapper(
 }
 
 inline
-arma::mat cwa_optimize(const cwa_smd_opt_param input,
-                       const double initial_step_size,
-                       const double tolerance,
-                       const double gradient_tolerance,
-                       const size_t total_steps,
-                       const std::string type) {
+std::tuple<arma::mat, double, double, int> cwa_optimize(const cwa_smd_opt_param input,
+                                                const double initial_step_size,
+                                                const double tolerance,
+                                                const double gradient_tolerance,
+                                                const size_t total_steps,
+                                                const std::string type) {
 
   /* allocate memory for minimization process */
   const auto minimizer_type = minimizer_map(type);
@@ -190,7 +190,7 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
 
   if (penalty_function_value < tolerance &&
       gradient_module < gradient_tolerance) {
-    return input.original_points;
+    return {input.original_points, penalty_function_value, gradient_module, 0};
   }
 
   auto minimizer_environment = gsl_multimin_fdfminimizer_alloc(minimizer_type,
@@ -230,10 +230,12 @@ arma::mat cwa_optimize(const cwa_smd_opt_param input,
     if (status == GSL_SUCCESS) {
       const arma::vec result = gsl::convert_vec(minimizer_environment->x);
 
+      const double f = minimizer_environment->f;
+      const double df = arma::norm(gsl::convert_vec(minimizer_environment->gradient));
       gsl_multimin_fdfminimizer_free(minimizer_environment);
       gsl_vector_free(points);
 
-      return arma::reshape(result, arma::size(input.original_points));
+      return {arma::reshape(result, arma::size(input.original_points)), f, df, iter};
     }
   } while (status == GSL_CONTINUE && iter < total_steps);
 
@@ -575,12 +577,14 @@ cwa_opt(const double initial_step_size,
         const double tolerance,
         const double gradient_tolerance,
         const size_t total_steps,
-        const std::string type = "bfgs2") {
+        const std::string type = "bfgs2",
+        const int print_level = 0) {
   return [initial_step_size,
       tolerance,
       gradient_tolerance,
       total_steps,
-      type
+      type,
+      print_level
   ](const Operator & cwa_smd_opt_operator,
     const Potential & potential) -> Propagator<State> {
     return [initial_step_size,
@@ -588,7 +592,8 @@ cwa_opt(const double initial_step_size,
         gradient_tolerance,
         total_steps,
         &cwa_smd_opt_operator,
-        type
+        type,
+        print_level
     ]
         (const State & state,
          const double dt) -> State {
@@ -601,9 +606,18 @@ cwa_opt(const double initial_step_size,
                                        state.weights, state.scaling,
                                        (long long) state.grade};
 
-      const arma::mat new_points =
-          details::cwa_optimize(input, initial_step_size,
+      const auto opt_result = details::cwa_optimize(input, initial_step_size,
                                 tolerance, gradient_tolerance, total_steps, type);
+
+      const arma::mat new_points = std::get<0>(opt_result);
+      const double f = std::get<1>(opt_result);
+      const double df = std::get<2>(opt_result);
+      const int iter = std::get<3>(opt_result);
+
+      if(print_level > 2) {
+        fmt::print("f: {0:12.6f}, df: {1:12.6f}, iter: {2}", f, df, iter);
+        fmt::print("\n");
+      }
 
       State new_state = state;
       new_state.points = new_points;
