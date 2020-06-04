@@ -5,46 +5,12 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include "src/util/ptree.h"
+#include "src/util/json_printer.h"
 #include "src/parse/printer.h"
+#include "src/parse/methods/cwa.h"
 #include "src/parse/math/polynomial.h"
 
 namespace quartz {
-
-namespace cwa_smd_opt_details {
-
-Printer<method::cwa_smd_opt::State> state_printer(ptree::ptree & result_tree) {
-  return [&result_tree](const method::cwa_smd_opt::State & state,
-                        const arma::uword &,
-                        const double,
-                        const int,
-                        const bool print_header) -> int {
-
-    if(print_header) {
-      util::put(result_tree, "weights", state.weights);
-    }
-    util::put(result_tree, "points", state.points);
-
-    return 0;
-  };
-}
-
-Printer<method::cwa_smd_opt::State> opt_printer(ptree::ptree & result_tree) {
-  return [&result_tree](const method::cwa_smd_opt::State & state,
-                        const arma::uword &,
-                        const double,
-                        const int,
-                        const bool print_header) -> int {
-
-    if(print_header) {
-      util::put(result_tree, "weights", state.weights);
-    }
-    util::put(result_tree, "points", state.points);
-
-    return 0;
-  };
-}
-}
-
 
 namespace ptree = boost::property_tree;
 
@@ -94,6 +60,15 @@ ptree::ptree cwa_smd_opt(const ptree::ptree & input,
   ptree::ptree result;
 
   auto printer_pair = printer(input, result, initial_state);
+
+  if(input.get<bool>("printer.print_state", false)) {
+    printer_pair =
+        printer(input,
+          result,
+          initial_state,
+          {cwa_details::state_printer<method::cwa_smd_opt::State>},
+          "state");
+  }
 
   auto optimizer =
       method::cwa_smd_opt::cwa_opt<math::Polynomial<double>>(initial_step_size,

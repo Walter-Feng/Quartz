@@ -615,7 +615,7 @@ cwa_opt(const double initial_step_size,
       const int iter = std::get<3>(opt_result);
 
       if(print_level > 2) {
-        fmt::print("f: {0:12.6f}, df: {1:12.6f}, iter: {2}", f, df, iter);
+        fmt::print("f: {0:20.10f}, df: {1:20.10f}, iter: {2}", f, df, iter);
         fmt::print("\n");
       }
 

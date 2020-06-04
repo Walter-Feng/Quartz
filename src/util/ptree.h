@@ -142,12 +142,19 @@ put(ptree::ptree & result, const std::string & path, const arma::mat & value) {
 
   ptree::ptree head;
 
-  const auto write = [&head](const arma::vec & element) {
+  const auto write = [&head](const arma::vec & col) {
 
-    ptree::ptree child;
+    ptree::ptree child_for_col;
 
-    put(child, "", element);
-    head.push_back(std::make_pair("", child));
+    const auto write_in_col = [&child_for_col](const double & element) {
+      ptree::ptree child_in_col;
+      child_in_col.put<double>("", element);
+      child_for_col.push_back(std::make_pair("", child_in_col));
+    };
+
+    col.for_each(write_in_col);
+
+    head.push_back(std::make_pair("", child_for_col));
   };
 
   value.each_col(write);
