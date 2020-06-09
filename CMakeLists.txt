@@ -17,7 +17,7 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     FIND_PACKAGE(Git)
     IF(GIT_FOUND)
         EXECUTE_PROCESS(
-                COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+                COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                 OUTPUT_VARIABLE "QUARTZ_BUILD_VERSION"
                 ERROR_QUIET
@@ -28,10 +28,12 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     ENDIF(GIT_FOUND)
 ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/QUARTZVersion.h.in ${CMAKE_CURRENT_BINARY_DIR}/QUARTZVersion.h @ONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal/version.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/include/quartz_internal/version.h)
 
 include(GNUInstallDirs)
 
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/quartz_internal)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
 

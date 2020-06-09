@@ -19,7 +19,8 @@ namespace quartz {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-const std::string version = "0.0.1";
+#include "version.h"
+const std::string version = gVERSION;
 
 // Global
 #include "quartz_internal/alias.h"
