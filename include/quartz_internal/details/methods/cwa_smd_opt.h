@@ -416,19 +416,14 @@ public:
   inline
   arma::vec positional_expectation() const {
 
-    const arma::vec result = this->expectations(this->positional_indices);
-    const arma::vec scale = this->scaling.rows(0, this->dim() - 1);
-
-    return result * scale;
+    return method::cwa::State(this->points, this->weights, this->masses)
+              .positional_expectation();
   }
 
   inline
   arma::vec momentum_expectation() const {
-    const arma::vec result = this->expectations(this->momentum_indices);
-    const arma::vec scale = this->scaling.rows(this->dim(),
-                                               2 * this->dim() - 1);
-
-    return result * scale;
+    return method::cwa::State(this->points, this->weights, this->masses)
+        .momentum_expectation();
   }
 
   State operator+(const State & B) const {

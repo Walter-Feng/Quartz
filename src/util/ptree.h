@@ -189,8 +189,10 @@ auto put(ptree::ptree & result, const std::string & path,
 
   ptree::ptree head;
 
-  put(head, "real", arma::real(value));
-  put(head, "imag", arma::imag(value));
+  const arma::vec real = arma::real(value);
+  const arma::vec imag = arma::imag(value);
+  put(head, "real", real);
+  put(head, "imag", imag);
 
   return result.put_child(path, head);
 
@@ -203,8 +205,11 @@ auto put(ptree::ptree & result, const std::string & path,
 
   ptree::ptree head;
 
-  put(head, "real", arma::real(value));
-  put(head, "imag", arma::imag(value));
+  const arma::vec real = arma::real(value);
+  const arma::vec imag = arma::imag(value);
+
+  put(head, "real", real);
+  put(head, "imag", imag);
 
   return result.put_child(path, head);
 }

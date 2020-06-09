@@ -15,7 +15,7 @@ template<typename CWAState>
 PtreePrinter<CWAState>
     state_printer = [](ptree::ptree & result_tree)
     -> Printer<CWAState> {
-  return [&result_tree](const method::cwa_smd_opt::State & state,
+  return [&result_tree](const CWAState & state,
                         const arma::uword &,
                         const double,
                         const int,
