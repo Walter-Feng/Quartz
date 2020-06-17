@@ -314,6 +314,8 @@ public:
                               this->scaling,
                               this->grade);
   }
+
+  State & operator=(const State &) = default;
 };
 
 struct Operator {

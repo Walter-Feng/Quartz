@@ -6,9 +6,32 @@
 
 #include "src/util/ptree.h"
 #include "src/parse/printer.h"
+#include "src/util/json_printer.h"
 
 namespace quartz {
 
+namespace dvr_details {
+
+template<typename DVRState>
+PtreePrinter<DVRState>
+    state_printer = [](ptree::ptree & result_tree)
+    -> Printer<DVRState> {
+  return [&result_tree](const DVRState & state,
+                        const arma::uword &,
+                        const double,
+                        const int,
+                        const bool print_header) -> int {
+
+    if(print_header) {
+      util::put(result_tree, "grid", state.points);
+    }
+    util::put(result_tree, "coefs", state.coefs);
+
+    return 0;
+  };
+};
+
+}
 namespace ptree = boost::property_tree;
 
 template<typename Potential, typename Initial>
@@ -39,6 +62,15 @@ ptree::ptree dvr(const ptree::ptree & input,
   ptree::ptree result;
 
   auto printer_pair = printer(input, result, initial_state);
+
+  if(input.get<bool>("printer.print_state", false)) {
+    printer_pair =
+        printer(input,
+                result,
+                initial_state,
+                {dvr_details::state_printer<method::dvr::State>},
+                "state");
+  }
 
   propagate(initial_state, op, wrapper, potential, printer_pair.first, steps,
             dt, printer_pair.second);

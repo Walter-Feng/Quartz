@@ -34,6 +34,8 @@ struct Phase {
     const arma::vec new_wavenumbers = this->wavenumbers + phase.wavenumbers;
     return Phase(new_wavenumbers);
   }
+
+  Phase & operator=(const Phase &) = default;
 };
 
 template<typename T>
@@ -91,6 +93,8 @@ struct Term {
   Term<std::common_type_t<T, U>> operator/(const Term<U> & term) const {
     return {this->coef / term.coef, this->wavenumbers - term.wavenumbers};
   }
+
+  Term & operator=(const Term &) = default;
 
 };
 }
@@ -258,6 +262,8 @@ struct Exponential {
 
     return Exponential<std::common_type_t<T, U>>(new_coefs, new_wavenumbers);
   }
+
+  Exponential & operator=(const Exponential &) = default;
 };
 
 }

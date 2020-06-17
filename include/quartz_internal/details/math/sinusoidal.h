@@ -26,6 +26,8 @@ struct Term {
           "Different size between the frequencies and the is_sin flags");
     }
   }
+
+  Term operator=(const Term &) = default;
 };
 }
 
@@ -94,6 +96,26 @@ struct Sinusoidal {
   }
 
   inline
+  Sinusoidal(const arma::Col <T> & coefs,
+             const arma::mat & freqs,
+             const arma::mat & is_sin,
+             const arma::mat & translation) :
+      coefs(coefs),
+      freqs(freqs),
+      is_sin(is_sin),
+      translation(translation){
+    if (coefs.n_elem != freqs.n_rows) {
+      throw Error(
+          "the number between the coefficients "
+          "and the frequencies is not consistent");
+    }
+
+    if(arma::size(freqs) != arma::size(is_sin)) {
+      throw Error("Different size between the frequencies and the is_sin flags");
+    }
+  }
+
+  inline
   arma::uword dim() const {
     return this->freqs.n_rows;
   }
@@ -131,7 +153,7 @@ struct Sinusoidal {
     arma::mat new_is_sin = this->is_sin;
     new_is_sin.col(index) += - 0.5 * pi;
 
-    return{new_coefs, this->freqs, new_is_sin, this->translation};
+    return  Sinusoidal<T>{new_coefs, this->freqs, new_is_sin, this->translation};
   }
 
   template<typename U>
@@ -169,6 +191,8 @@ struct Sinusoidal {
 
     return {new_coefs, new_freqs, new_is_sin, new_translation};
   }
+
+  Sinusoidal & operator=(const Sinusoidal &) = default;
 };
 }
 

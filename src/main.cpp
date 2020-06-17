@@ -2,16 +2,17 @@
 #include <args.hxx>
 
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include "util/json_parser.h"
 
 #include "run.h"
-#include "parse/math/polynomial.h"
-#include "parse/math/gaussian.h"
-#include "parse/methods/cwa.h"
+#include "util/time.h"
 
 int main(const int argc, const char * argv[]) {
 
   using namespace quartz;
+
+  Timer time;
+
   namespace ptree = boost::property_tree;
 
   args::ArgumentParser parser("This is a simple quartz interface "
@@ -38,8 +39,9 @@ int main(const int argc, const char * argv[]) {
                                            "Currently supported methods: \n"
                                            "DVR(default), \n"
                                            "CWA, \n"
-                                           "CWA_SMD\n"
-                                           "DVR_SMD\n",
+                                           "CWA_SMD,\n"
+                                           "DVR_SMD,\n"
+                                           "G_CWA_SMD\n",
                                            {"method"});
 
   args::ValueFlag<arma::uword> grid_flag(parser, "grid",
@@ -108,8 +110,18 @@ int main(const int argc, const char * argv[]) {
 
     ptree::read_json(args::get(input_flag), input);
 
-    return run(input);
+    ptree::ptree result = run(input);
 
+    if (input.get_optional<std::string>("json")) {
+      result.put<double>("time_elapsed", time.elapsed());
+      ptree::write_json(input.get<std::string>("json"), result);
+    }
+
+    fmt::print("Total time elapsed: ");
+    fmt::print("{}", time.elapsed());
+    fmt:: print(" s\n");
+
+    return 0;
   }
 
     ///////////////////// Global Parameters /////////////////////
@@ -126,7 +138,7 @@ int main(const int argc, const char * argv[]) {
 
   int print_level = 2;
 
-  auto initial_wf = math::Gaussian<cx_double>(arma::mat{1.}, arma::cx_vec{1});
+  auto initial_wf = math::Gaussian<cx_double>(arma::cx_mat{1.}, arma::cx_vec{1});
 
   ///////////////////// Potential (model) //////////////////////
   auto potential = math::Polynomial<double>(arma::vec{0.5}, lmat{2});
@@ -238,6 +250,10 @@ int main(const int argc, const char * argv[]) {
                                   generic_printer<method::dvr::State>,
                                   steps, dt, print_level);
   }
+
+  fmt::print("Total time elapsed: ");
+  fmt::print("{}", time.elapsed());
+  fmt:: print(" s\n");
 
   return 0;
 }

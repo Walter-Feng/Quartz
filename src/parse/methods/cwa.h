@@ -9,6 +9,29 @@
 
 namespace quartz {
 
+namespace cwa_details {
+
+template<typename CWAState>
+PtreePrinter<CWAState>
+    state_printer = [](ptree::ptree & result_tree)
+    -> Printer<CWAState> {
+  return [&result_tree](const CWAState & state,
+                        const arma::uword &,
+                        const double,
+                        const int,
+                        const bool print_header) -> int {
+
+    if(print_header) {
+      util::put(result_tree, "weights", state.weights);
+    }
+    util::put(result_tree, "points", state.points);
+
+    return 0;
+  };
+};
+
+}
+
 namespace ptree = boost::property_tree;
 
 template<typename Potential, typename Initial>

@@ -198,7 +198,7 @@ public:
       const cx_double dimension_result =
           arma::cdot(this->coefs,
                      this->positional_matrices.slice(i) * this->coefs);
-      assert(std::abs(dimension_result.imag()) < 1e-8);
+      assert(std::abs(dimension_result.imag()) < 1e-6);
       result(i) = std::real(dimension_result);
     }
 
@@ -213,7 +213,7 @@ public:
       const cx_double dimension_result =
           arma::cdot(this->coefs,
                      this->momentum_matrices.slice(i) * this->coefs);
-      assert(std::abs(dimension_result.imag()) < 1e-8);
+      assert(std::abs(dimension_result.imag()) < 1e-6);
       result(i) = std::real(dimension_result);
     }
 

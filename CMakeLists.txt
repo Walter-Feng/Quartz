@@ -13,7 +13,29 @@ set(PROJECT_VERSION 0.0.1)
 project(Quartz VERSION ${PROJECT_VERSION}
         DESCRIPTION "An simple adiabatic quantum dynamics library")
 
+IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    FIND_PACKAGE(Git)
+    IF(GIT_FOUND)
+        EXECUTE_PROCESS(
+                COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                OUTPUT_VARIABLE "QUARTZ_BUILD_VERSION"
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Git version: ${QUARTZ_BUILD_VERSION}" )
+    ELSE(GIT_FOUND)
+        SET(QUARTZ_BUILD_VERSION 0)
+    ENDIF(GIT_FOUND)
+ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal/version.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/include/quartz_internal/version.h)
+
 include(GNUInstallDirs)
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/quartz_internal)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
 
 enable_testing()
 
@@ -40,8 +62,24 @@ if (${ARMADILLO_FOUND})
     message("     ARMADILLO_VERSION: " ${ARMADILLO_VERSION_STRINcatchG})
     message("     ARMADILLO_LIBRARIES   : " ${ARMADILLO_LIBRARIES})
     message("     ARMADILLO_INCLUDE_DIRS: " ${ARMADILLO_INCLUDE_DIRS})
+
+    include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
+    target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
 endif ()
 
+find_package(
+        HDF5
+)
+
+if (${HDF5_FOUND})
+    message("Found HDF5 Library,")
+    message("     HDF5_VERSION: " ${HDF5_VERSION_STRINcatchG})
+    message("     HDF5_LIBRARIES   : " ${HDF5_LIBRARIES})
+    message("     HDF5_INCLUDE_DIRS: " ${HDF5_INCLUDE_DIRS})
+
+    include_directories(SYSTEM ${HDF5_INCLUDE_DIRS})
+    target_link_libraries(quartz ${HDF5_LIBRARIES})
+endif ()
 ######OpenMP######
 
 FIND_PACKAGE(OpenMP)
@@ -51,12 +89,6 @@ if (OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif ()
-
-
-include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/quartz_internal)
-target_link_libraries(quartz ${ARMADILLO_LIBRARIES})
 
 install(TARGETS quartz
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -69,6 +101,18 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
         DESTINATION include
         FILES_MATCHING PATTERN "quartz")
+
+######GSL######
+
+find_package(
+        GSL
+        2.4
+        REQUIRED
+)
+
+include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
+target_link_libraries(quartz ${GSL_LIBRARIES})
+
 
 
 ################################
@@ -84,11 +128,12 @@ target_include_directories(catch2 PUBLIC external/Catch2/)
 
 ########fmt#########
 
+message("\n This is {fmt} library.")
 add_subdirectory(external/fmt)
 include_directories("external/fmt/include")
 target_link_libraries(quartz fmt::fmt-header-only)
 add_definitions(-DHAVE_FMT)
-
+message("\n")
 
 #######################
 # Compile Executables #
@@ -122,9 +167,11 @@ if (HAVE_EXE)
                 src/file_system/json_parse.cpp
                 src/util/ptree.cpp
                 src/util/resolve.cpp
+                src/parse/math/exponential.cpp
                 src/parse/math/polynomial.cpp
                 src/parse/math/gaussian.cpp
-                src/parse/methods/cwa.cpp
+                src/parse/math/math_object.cpp
+                src/parse/methods/m_dvr.cpp
                 )
 
         include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -139,12 +186,6 @@ if (HAVE_EXE)
     endif ()
 
     target_link_libraries(quartz.exe quartz)
-
-    add_executable(quartz_expectation
-            src/expectation.cpp
-            )
-
-    target_link_libraries(quartz_expectation quartz)
 
 endif ()
 
@@ -171,6 +212,8 @@ add_executable(test_mathematics
         test/details/math/runge_kutta_test.cpp
         test/details/math/schrotinger_wrapper_test.cpp
         test/details/math/moyal_bracket_test.cpp
+        test/details/math/taylor_expand_test.cpp
+        test/details/math/math_object_test.cpp
         )
 
 target_link_libraries(test_mathematics catch2 quartz)
@@ -180,7 +223,8 @@ add_test(NAME UNITTEST_math
 
 add_executable(test_utils
         test/utils/check_member_test.cpp
-        test/utils/elementary_function_operator.cpp)
+        test/utils/elementary_function_operator.cpp
+        test/utils/gsl_converter_test.cpp)
 
 target_link_libraries(test_utils catch2 quartz)
 
@@ -194,7 +238,12 @@ add_executable(test_methods
         test/details/methods/wd_test.cpp
         test/details/methods/dmd_test.cpp
         test/details/methods/cwa_smd_test.cpp
-        test/details/methods/dvr_smd_test.cpp)
+        test/details/methods/cwa_smd_opt_test.cpp
+        test/details/methods/dvr_smd_test.cpp
+        test/details/methods/g_cwa_smd_test.cpp
+        #test/details/methods/heller_cwa_test.cpp
+        #test/details/methods/heller_gaussian_test.cpp
+        )
 
 target_link_libraries(test_methods catch2 quartz)
 

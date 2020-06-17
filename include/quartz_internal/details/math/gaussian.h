@@ -11,24 +11,30 @@ namespace math {
 template<typename T>
 struct Gaussian {
   T coef;
-  arma::mat covariance;
+  arma::Mat<T> covariance;
   arma::Col<T> center;
 
   inline
+  Gaussian() :
+      coef(0.0),
+      covariance(arma::eye<arma::Mat<T>>(1, 1)),
+      center(arma::Col<T>{1.0}) {}
+
+  inline
   Gaussian(const Gaussian<T> & gaussian) :
-  coef(gaussian.coef),
-  covariance(gaussian.covariance),
-  center(gaussian.center) {}
+      coef(gaussian.coef),
+      covariance(gaussian.covariance),
+      center(gaussian.center) {}
 
   inline
   Gaussian(const arma::uword dim, const T coef = T{0.0}) :
       coef(coef),
-      covariance(arma::eye<arma::mat>(dim, dim)),
+      covariance(arma::eye<arma::Mat<T>>(dim, dim)),
       center(arma::zeros<arma::vec>(dim)) {}
 
 
   inline
-  Gaussian(const arma::mat & covariance, const T coef = T{1.0}) :
+  Gaussian(const arma::Mat<T> & covariance, const T coef = T{1.0}) :
       coef(coef),
       covariance(covariance),
       center(arma::zeros<arma::vec>(covariance.n_rows)) {
@@ -38,7 +44,7 @@ struct Gaussian {
   }
 
   inline
-  Gaussian(const arma::mat & covariance, const arma::Col<T> & mean,
+  Gaussian(const arma::Mat<T> & covariance, const arma::Col<T> & mean,
            const T coef = T{1.0}) :
       coef(coef),
       covariance(covariance),
@@ -60,7 +66,9 @@ struct Gaussian {
 
     const arma::cx_vec new_mean =
         this->center + cx_double{0.0, 1.0} * this->covariance * phase_factor;
-    return Gaussian<cx_double>(this->covariance, new_mean, this->coef);
+    return Gaussian<cx_double>(
+        arma::conv_to<arma::cx_mat>::from(this->covariance),
+        new_mean, this->coef);
   }
 
   inline
@@ -76,6 +84,21 @@ struct Gaussian {
   inline
   arma::uword dim() const {
     return this->covariance.n_rows;
+  }
+
+  inline
+  Gaussian<double> abs() const {
+
+    const arma::cx_mat cov_inv = arma::inv(this->covariance);
+    const arma::mat real_cov = arma::inv(arma::real(cov_inv));
+    const arma::vec new_B = arma::real(cov_inv * this->center);
+    const arma::vec new_center = real_cov * new_B;
+    const double new_coef = std::abs(this->coef) *
+        std::exp(0.5 * arma::dot(new_center, new_B))
+        / std::abs(
+            std::exp(0.5 *
+            arma::dot(this->center, arma::inv(this->covariance)* this->center)));
+    return Gaussian<double>(real_cov, new_center, new_coef);
   }
 
   template<typename U>
@@ -106,9 +129,15 @@ struct Gaussian {
           "Different dimension between the gaussian term and polynomial term");
     }
 
+    const Polynomial<std::common_type_t<T, U>>
+    converted_polynomial(
+        arma::conv_to<arma::Col<std::common_type_t<T,U>>>::from(polynomial.coefs),
+        polynomial.exponents
+        );
+
     const auto functor = [this](
-        const Polynomial<T> & poly) -> Polynomial<T> {
-      Polynomial<T> result = Polynomial<T>(poly.dim());
+        const Polynomial<std::common_type_t<T, U>> & poly) -> auto {
+      auto result = Polynomial<std::common_type_t<T, U>>(poly.dim());
 
       for (arma::uword i = 0; i < poly.dim(); i++) {
         for (arma::uword j = 0; j < poly.dim(); j++) {
@@ -121,14 +150,13 @@ struct Gaussian {
       return result;
     };
 
-    const auto post_functor = [this](const Polynomial<T> & poly) {
-
-      return poly.at(this->center);
-    };
+    const auto post_functor =
+        [this](const Polynomial<std::common_type_t<T, U>> & poly) -> auto {
+          return poly.at(this->center);
+        };
     const std::common_type_t<T, U> polynomial_part = exp(functor, post_functor,
-                                                         polynomial,
-                                                         polynomial.grade() /
-                                                         2);
+                                                         converted_polynomial,
+                                                         polynomial.grade() / 2 + 1);
 
     return polynomial_part;
   }
@@ -145,16 +173,25 @@ struct Gaussian {
 
   inline
   Gaussian<double> wigner_transform() const {
+
+    if (!arma::approx_equal(arma::imag(this->covariance),
+                            arma::zeros<arma::mat>(
+                                arma::size(this->covariance)),
+                            "abs_diff", 1e-16)) {
+      throw Error(
+          "Currently wigner transformation can only be applied to real covariance");
+    }
     arma::vec eigenvalues;
     arma::mat eigenvectors;
 
-    arma::eig_sym(eigenvalues, eigenvectors, this->covariance);
+    arma::eig_sym(eigenvalues, eigenvectors, arma::real(this->covariance));
 
     const arma::mat transformed_covariance =
         arma::diagmat<arma::mat>(1. / eigenvalues);
 
     const arma::mat zero_matrix = arma::zeros(arma::size(this->covariance));
-    const arma::mat real_space_covariance_part = 0.5 * this->covariance;
+    const arma::mat real_space_covariance_part =
+        0.5 * arma::real(this->covariance);
     const arma::vec real_space_mean_part = arma::real(this->center);
     const arma::mat momentum_space_covariance_part =
         0.5 * eigenvectors * transformed_covariance * eigenvectors.t();
@@ -206,13 +243,16 @@ struct Gaussian {
 
     const std::common_type_t<T, U> new_coef =
         std::exp(-0.5 * (arma::dot(this->center, this_A * this->center)
-        + arma::dot(B.center, B_A * B.center)
-        - arma::dot(new_mean, A_sum * new_mean))) * this->coef * B.coef;
+                         + arma::dot(B.center, B_A * B.center)
+                         - arma::dot(new_mean, A_sum * new_mean))) *
+        this->coef * B.coef;
     return
         Gaussian<std::common_type_t<T, U>>(new_covariance,
                                            new_mean,
                                            new_coef);
   }
+
+  Gaussian & operator=(const Gaussian &) = default;
 
 };
 
@@ -223,8 +263,13 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly(const GaussianWithPoly<T> & function) :
-  polynomial(function.polynomial),
-  gaussian(function.gaussian) {}
+      polynomial(function.polynomial),
+      gaussian(function.gaussian) {}
+
+  inline
+  GaussianWithPoly() :
+      polynomial(),
+      gaussian() {}
 
   inline
   GaussianWithPoly(const arma::uword dim, const T coef = 0.0) :
@@ -233,7 +278,7 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly(const Polynomial<T> & polynomial,
-                   const arma::mat & covariance,
+                   const arma::Mat<T> & covariance,
                    const arma::Col<T> & mean) :
       polynomial(polynomial),
       gaussian(Gaussian<T>(covariance, mean, 1.0)) {
@@ -265,7 +310,7 @@ struct GaussianWithPoly {
   }
 
   inline
-  GaussianWithPoly(const arma::mat & covariance,
+  GaussianWithPoly(const arma::Mat<T> & covariance,
                    const arma::Col<T> & mean,
                    const T coef = 1.0) :
       polynomial(Polynomial<T>(covariance.n_rows, coef)),
@@ -280,13 +325,12 @@ struct GaussianWithPoly {
   }
 
 
-  explicit
   inline
-  GaussianWithPoly(const arma::mat & covariance, const T coef = 1.0) :
+  GaussianWithPoly(const arma::Mat<T> & covariance, const T coef = 1.0) :
       polynomial(Polynomial<T>(covariance.n_cols, coef)),
       gaussian(Gaussian<T>(covariance, 1.0)) {}
 
-  explicit
+
   inline
   GaussianWithPoly(const Gaussian<T> & gaussian) :
       polynomial(Polynomial<T>(gaussian.dim(), gaussian.coef)),
@@ -335,7 +379,7 @@ struct GaussianWithPoly {
 
   inline
   GaussianWithPoly<T> derivative(const arma::uvec & index) const {
-    if (index.n_elem != this->dim) {
+    if (index.n_elem != this->dim()) {
       throw Error("Derivative operator out of bound");
     }
 
@@ -417,6 +461,8 @@ struct GaussianWithPoly {
     return GaussianWithPoly<std::common_type_t<T, U>>
         (this->polynomial * B, this->gaussian);
   }
+
+  GaussianWithPoly & operator=(const GaussianWithPoly &) = default;
 };
 
 
@@ -424,12 +470,12 @@ struct GaussianWithPoly {
 //struct Gaussian {
 //  std::vector<gaussian::Term<T>> terms;
 //
-//  explicit
+//
 //  inline
 //  Gaussian(std::vector<gaussian::Term<T>> terms) :
 //      terms(terms) {}
 //
-//  explicit
+//
 //  inline
 //  Gaussian(const arma::uword dim, const T coef = 0.0) :
 //      terms({gaussian::Term<T>(dim, coef)}) {}
@@ -446,7 +492,7 @@ struct GaussianWithPoly {
 //           const T coef = 1.0) :
 //      terms({gaussian::Term<T>(covariance,center,coef)}) {}
 //
-//  explicit
+//
 //  inline
 //  Gaussian(const arma::mat & covariance, const T coef = 1.0) :
 //      terms({gaussian::Term<T>(covariance, coef)}) {}

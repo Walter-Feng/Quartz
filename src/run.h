@@ -7,7 +7,7 @@ namespace quartz {
 
 namespace ptree = boost::property_tree;
 
-int run(const ptree::ptree & input);
+ptree::ptree run(const ptree::ptree & input);
 
 
 }

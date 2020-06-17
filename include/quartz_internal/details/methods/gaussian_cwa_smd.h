@@ -1,34 +1,33 @@
-#ifndef METHODS_CWA_SMD_H
-#define METHODS_CWA_SMD_H
+#ifndef METHODS_GAUSSIAN_CWA_SMD_H
+#define METHODS_GAUSSIAN_CWA_SMD_H
 
 namespace method {
-namespace cwa_smd {
+namespace g_cwa_smd {
 namespace details {
 
 template<typename Function>
 auto expectation(const Function & function,
                  const arma::mat & points,
-                 const arma::vec & weights,
-                 const arma::vec & scaling) {
+                 const arma::vec & weights) {
 
-  const arma::mat scaled_points = arma::diagmat(1 / scaling) * points;
-
-  auto result = at(function, scaled_points);
+  auto result = at(function, points);
 
   return arma::dot(result, weights) / arma::sum(weights);
 }
 
 template<typename T>
 auto at_search(const math::polynomial::Term <T> & term,
+               const math::Gaussian <T> & gaussian,
                const arma::mat & points,
                const arma::vec & weights,
                const arma::vec & expectations,
                const arma::uvec & table,
-               const arma::vec & scaling,
                const arma::uword grade) {
 
   if ((arma::uword) arma::sum(term.exponents) >= grade) {
-    return expectation(term, points, weights, scaling);
+    return expectation(
+        math::GaussianWithPoly(math::Polynomial(term), gaussian),
+        points, weights);
   } else {
     const arma::uvec indices = arma::conv_to<arma::uvec>::from(term.exponents);
 
@@ -39,19 +38,21 @@ auto at_search(const math::polynomial::Term <T> & term,
 
 template<typename T>
 auto at_search(const math::Polynomial <T> & polynomial,
+               const math::Gaussian <T> & gaussian,
                const arma::mat & points,
                const arma::vec & weights,
                const arma::vec & expectations,
                const arma::uvec & table,
-               const arma::vec & scaling,
                const arma::uword grade) {
 
-  auto result = at_search(polynomial.term(0), points, weights, expectations,
-                          table, scaling, grade);
+  auto result = at_search(polynomial.term(0), gaussian, points, weights,
+                          expectations,
+                          table, grade);
 
   for (arma::uword i = 1; i < polynomial.coefs.n_elem; i++) {
-    result += at_search(polynomial.term(i), points, weights, expectations,
-                        table, scaling, grade);
+    result += at_search(polynomial.term(i), gaussian, points, weights,
+                        expectations,
+                        table, grade);
   }
 
   return result;
@@ -68,9 +69,8 @@ public:
   arma::uword grade;
   arma::uvec expectation_table;
   arma::vec expectations;
-  arma::uvec positional_indices;
-  arma::uvec momentum_indices;
-  arma::vec scaling;
+  math::Gaussian<double> gaussian;
+  math::Polynomial<double> taylor_expansion;
 
   // Establish an easy way to construct your State
   template<typename PhaseSpaceDistribution>
@@ -84,7 +84,9 @@ public:
       masses(masses),
       grade(grade),
       expectation_table(math::space::grids_to_table(
-          grade * arma::ones<arma::uvec>(points.n_rows))) {
+          grade * arma::ones<arma::uvec>(points.n_rows))),
+      gaussian(),
+      taylor_expansion() {
     if (grid.n_rows != range.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -96,25 +98,23 @@ public:
     const arma::uword length = std::pow(grade, dimension);
 
     this->expectations = arma::vec(length);
-    this->positional_indices = arma::uvec(dimension / 2);
-    this->momentum_indices = arma::uvec(dimension / 2);
 
-    const arma::vec ranges = range.col(1) - range.col(0);
-    this->scaling = ranges;
+    const arma::vec standard_deviation =
+        (arma::abs(range.col(1)) + arma::abs(range.col(0))) / 2.;
 
+    const arma::mat covariance = arma::diagmat(
+        arma::pow(standard_deviation, 2));
 
-    // exponents check in
-#pragma omp parallel for
-    for (arma::uword i = 0; i < dimension / 2; i++) {
-      arma::uvec X = arma::zeros<arma::uvec>(dimension);
-      arma::uvec P = arma::zeros<arma::uvec>(dimension);
-      X(i) = 1;
-      P(i + dimension / 2) = 1;
-      this->positional_indices(i) =
-          math::space::indices_to_index(X, this->expectation_table);
-      this->momentum_indices(i) =
-          math::space::indices_to_index(P, this->expectation_table);
-    }
+    this->gaussian = math::Gaussian<double>(covariance, arma::zeros<arma::vec>(
+        covariance.n_rows));
+
+    this->taylor_expansion =
+        math::taylor_expand<math::GaussianWithPoly<double>, double>(
+            math::GaussianWithPoly<double>(-covariance),
+            arma::zeros<arma::vec>(grid.n_elem),
+            this->grade
+        );
+
 
     // expectations check in
 #pragma omp parallel for
@@ -124,9 +124,14 @@ public:
               math::space::index_to_indices(i, this->expectation_table));
 
       this->expectations(i) =
-          details::expectation(math::polynomial::Term(1.0, indices),
-                               this->points, this->weights, this->scaling);
+          details::expectation(
+              math::GaussianWithPoly(
+                  math::Polynomial(math::polynomial::Term(1.0, indices)),
+                  this->gaussian),
+              this->points, this->weights);
     }
+
+
   }
 
   template<typename PhaseSpaceDistribution>
@@ -139,7 +144,8 @@ public:
       masses(arma::ones<arma::vec>(grid.n_rows / 2)),
       grade(grade),
       expectation_table(math::space::grids_to_table(
-          grade * arma::ones<arma::uvec>(points.n_rows))) {
+          grade * arma::ones<arma::uvec>(points.n_rows))),
+      gaussian(initial.cov(), initial.mean()) {
     if (grid.n_rows != range.n_rows) {
       throw Error("Different dimension between the grid and the range");
     }
@@ -147,37 +153,41 @@ public:
       throw Error("Different dimension between the grid and the masses");
     }
 
-    const auto dimension = grid.n_elem;
-    const auto length = std::pow(grade, dimension);
+    const arma::uword dimension = grid.n_elem;
+    const arma::uword length = std::pow(grade, dimension);
 
     this->expectations = arma::vec(length);
-    this->positional_indices = arma::uvec(dimension / 2);
-    this->momentum_indices = arma::uvec(dimension / 2);
 
-    const arma::vec ranges = range.col(1) - range.col(0);
-    this->scaling = ranges;
+    const arma::vec standard_deviation =
+        (arma::abs(range.col(1)) + arma::abs(range.col(0))) / 2.;
 
-    // exponents check in
-    for (arma::uword i = 0; i < dimension / 2; i++) {
-      arma::uvec X = arma::zeros<arma::uvec>(dimension);
-      arma::uvec P = arma::zeros<arma::uvec>(dimension);
-      X(i) = 1;
-      P(i + dimension / 2) = 1;
-      this->positional_indices(i) =
-          math::space::indices_to_index(X, this->expectation_table);
-      this->momentum_indices(i) =
-          math::space::indices_to_index(P, this->expectation_table);
-    }
+    const arma::mat covariance = arma::diagmat(
+        arma::pow(standard_deviation, 2));
+
+    this->gaussian = math::Gaussian<double>(covariance, arma::zeros<arma::vec>(
+        covariance.n_rows));
+
+    this->taylor_expansion =
+        math::taylor_expand<math::GaussianWithPoly<double>, double>(
+            math::GaussianWithPoly<double>(-covariance),
+            arma::zeros<arma::vec>(grid.n_elem),
+            this->grade
+        );
+
 
     // expectations check in
+#pragma omp parallel for
     for (arma::uword i = 0; i < length; i++) {
       const lvec indices =
           arma::conv_to<lvec>::from(
               math::space::index_to_indices(i, this->expectation_table));
 
       this->expectations(i) =
-          details::expectation(math::polynomial::Term(1.0, indices),
-                               this->points, this->weights, this->scaling);
+          details::expectation(
+              math::GaussianWithPoly(
+                  math::Polynomial(math::polynomial::Term(1.0, indices)),
+                  this->gaussian),
+              this->points, this->weights);
     }
   }
 
@@ -187,9 +197,8 @@ public:
         const arma::vec & masses,
         const arma::uvec & expectation_table,
         const arma::vec & expectations,
-        const arma::uvec & positional_indices,
-        const arma::uvec & momentum_indices,
-        const arma::vec & scaling,
+        const math::Gaussian<double> & gaussian,
+        const math::Polynomial<double> & taylor_expansion,
         const arma::uword grade) :
       points(points),
       weights(weights),
@@ -197,9 +206,8 @@ public:
       grade(grade),
       expectation_table(expectation_table),
       expectations(expectations),
-      positional_indices(positional_indices),
-      momentum_indices(momentum_indices),
-      scaling(scaling) {}
+      gaussian(gaussian),
+      taylor_expansion(taylor_expansion) {}
 
   inline
   State(const State & state) :
@@ -209,9 +217,8 @@ public:
       grade(state.grade),
       expectation_table(state.expectation_table),
       expectations(state.expectations),
-      positional_indices(state.positional_indices),
-      momentum_indices(state.momentum_indices),
-      scaling(state.scaling) {}
+      gaussian(state.gaussian),
+      taylor_expansion(state.taylor_expansion) {}
 
   inline
   arma::uword dim() const {
@@ -229,25 +236,48 @@ public:
   inline
   arma::vec positional_expectation() const {
 
-    const arma::vec result = this->expectations(this->positional_indices);
-    const arma::vec scale = this->scaling.rows(0, this->dim() - 1);
+    arma::vec result(this->dim());
 
-    return result * scale;
+#pragma omp parallel for
+    for (arma::uword i = 0; i < this->dim(); i++) {
+      auto taylor_expansion_multiplied_by_x =
+          this->taylor_expansion;
+      taylor_expansion_multiplied_by_x.exponents.row(i) += 1;
+
+      result(i) = details::at_search(taylor_expansion_multiplied_by_x,
+                                     this->gaussian, this->points,
+                                     this->weights, this->expectations,
+                                     this->expectation_table, this->grade);
+    }
+
+
+    return result;
   }
 
   inline
   arma::vec momentum_expectation() const {
-    const arma::vec result = this->expectations(this->momentum_indices);
-    const arma::vec scale = this->scaling.rows(this->dim(),
-                                               2 * this->dim() - 1);
+    arma::vec result(this->dim());
 
-    return result * scale;
+#pragma omp parallel for
+    for (arma::uword i = 0; i < this->dim(); i++) {
+      auto taylor_expansion_multiplied_by_p =
+          this->taylor_expansion;
+      taylor_expansion_multiplied_by_p.exponents.row(this->dim() + i) += 1;
+
+      result(i) = details::at_search(taylor_expansion_multiplied_by_p,
+                                     this->gaussian, this->points,
+                                     this->weights, this->expectations,
+                                     this->expectation_table, this->grade);
+    }
+
+
+    return result;
   }
 
   State operator+(const State & B) const {
     if (!arma::approx_equal(this->weights, B.weights, "abs_diff", 1e-16) ||
         !arma::approx_equal(this->masses, B.masses, "abs_diff", 1e-16)) {
-      throw Error("Different cwa states are being added");
+      throw Error("Different md states are being added");
     }
 
     State state = B;
@@ -268,25 +298,22 @@ public:
 
   template<typename T>
   auto expectation(const math::Polynomial <T> & polynomial) const {
-
     return details::at_search(polynomial,
+                              this->gaussian,
                               this->points,
                               this->weights,
                               this->expectations,
                               this->expectation_table,
-                              this->scaling,
-                              this->grade) * polynomial.at(this->scaling);
+                              this->grade);
   }
 
   template<typename T>
-  arma::vec expectation(const std::vector<math::Polynomial < T>>
-
-  & polynomials) const {
-    arma::vec result(polynomials.size());
+  arma::vec expectation(const std::vector<math::Polynomial<T>> & observables) const {
+    arma::vec result(observables.size());
 
 #pragma omp parallel for
-    for (arma::uword i = 0; i < result.n_elem; i++) {
-      result(i) = this->expectation(polynomials[i]);
+    for(arma::uword i=0; i<result.n_elem; i++) {
+      result[i] = this->expectation(observables[i]);
     }
 
     return result;
@@ -305,7 +332,7 @@ public:
   Operator(const State & state,
            const math::Polynomial<double> & potential) :
       potential(potential),
-      H(hamiltonian(potential, state.masses).scale(state.scaling)),
+      H(hamiltonian(potential, state.masses)),
       operators() {
 
     std::vector<math::Polynomial<double>>
@@ -320,12 +347,13 @@ public:
                                                               i,
                                                               state.expectation_table)));
 
-      const arma::uword cut_off = std::min(observable.grade(), H.grade()) / 2;
+      const arma::uword cut_off = H.grade() / 2;
       const auto moyal =
-          moyal_bracket(math::Polynomial(observable), H, state.scaling,
-                        cut_off);
+          moyal_bracket(
+              math::GaussianWithPoly(math::Polynomial(observable),state.gaussian),
+              H, cut_off);
 
-      op[i] = moyal;
+      op[i] = moyal.polynomial;
     }
 
     this->operators = op;
@@ -345,8 +373,7 @@ public:
     const arma::mat points_change_list =
         arma::join_cols(p_submatrix,
                         cwa::details::force(this->potential,
-                                            state.points.rows(0, state.dim() -
-                                                                 1)));
+                                       state.points.rows(0, state.dim() - 1)));
 
     arma::vec expectation_change_list =
         arma::vec(arma::size(state.expectations));
@@ -355,11 +382,11 @@ public:
     for (arma::uword i = 0; i < expectation_change_list.n_elem; i++) {
       expectation_change_list(i) =
           details::at_search(this->operators[i],
+                             state.gaussian,
                              state.points,
                              state.weights,
                              state.expectations,
                              state.expectation_table,
-                             state.scaling,
                              state.grade);
     }
 
@@ -368,16 +395,14 @@ public:
                  state.masses,
                  state.expectation_table,
                  expectation_change_list,
-                 state.positional_indices,
-                 state.momentum_indices,
-                 state.scaling,
+                 state.gaussian,
+                 state.taylor_expansion,
                  state.grade);
   }
 
-  Operator & operator=(const Operator &) = default;
 };
 
-} // namespace cwa
+} // namespace g_cwa_smd
 }
 
-#endif //METHODS_CWA_SMD_H
+#endif //METHODS_GAUSSIAN_CWA_SMD_H

@@ -1,5 +1,5 @@
-#ifndef PARSE_METHODS_DVR_SMD_H
-#define PARSE_METHODS_DVR_SMD_H
+#ifndef PARSE_METHODS_G_CWA_SMD_H
+#define PARSE_METHODS_G_CWA_SMD_H
 
 #include <quartz>
 #include <boost/property_tree/ptree.hpp>
@@ -12,9 +12,9 @@ namespace quartz {
 namespace ptree = boost::property_tree;
 
 template<typename Initial>
-ptree::ptree dvr_smd(const ptree::ptree & input,
-                     const math::Polynomial<double> & potential,
-                     const Initial & initial) {
+ptree::ptree g_cwa_smd(const ptree::ptree & input,
+                       const math::Polynomial<double> & potential,
+                       const Initial & initial) {
 
   const arma::uvec grid =
       arma::uvec(util::get_list<arma::uword>(input.get_child("grid")));
@@ -32,12 +32,13 @@ ptree::ptree dvr_smd(const ptree::ptree & input,
     masses = arma::vec(util::get_list<double>(input.get_child("mass")));
   }
 
-  method::dvr_smd::State initial_state(initial, grid, range, masses, grade);
-  method::dvr_smd::Operator op(initial_state, potential);
+  method::g_cwa_smd::State initial_state(initial.wigner_transform(), grid, range,
+                                       masses, grade);
+  method::g_cwa_smd::Operator op(initial_state, potential);
   auto wrapper =
-      method::dvr_smd::mixed_runge_kutta_4<
-          method::dvr_smd::Operator,
-          method::dvr_smd::State,
+      math::runge_kutta_4<
+          method::g_cwa_smd::Operator,
+          method::g_cwa_smd::State,
           math::Polynomial<double>>;
 
   ptree::ptree result;
@@ -51,11 +52,11 @@ ptree::ptree dvr_smd(const ptree::ptree & input,
 }
 
 template<typename Initial>
-ptree::ptree dvr_smd(const ptree::ptree & input,
+ptree::ptree g_cwa_smd(const ptree::ptree & input,
                      const MathObject<double> & potential,
                      const Initial & initial) {
 
-  return dvr_smd(input, parse::polynomial(potential), initial);
+  return g_cwa_smd(input, parse::polynomial(potential), initial);
 }
 
 }

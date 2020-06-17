@@ -65,9 +65,8 @@ TEST_CASE("Check printer") {
     struct dummy_state {
       [[nodiscard]] arma::vec expectation(
           const std::vector<math::Polynomial<double>> & function) const {
-        const arma::vec random_position = arma::randu<arma::vec>(
-            function[0].dim());
-        return {function[0].at(random_position)};
+
+        return arma::randu<arma::vec>(function.size());
       }
     } test;
 
